@@ -13,7 +13,7 @@ import (
 )
 
 func setup(t *testing.T) *Client {
-	client, err := NewClient("pulsar://localhost:6650")
+	client, err := NewClient("pulsar://localhost:6650", WithLogger(newTestLogger(t)))
 	require.Nil(t, err)
 
 	ctx := context.Background()
