@@ -87,9 +87,9 @@ func TestSendReceiveEarliestPosition(t *testing.T) {
 	require.Nil(t, err)
 
 	m := readMessageAndCompare(t, consumer, msg1)
-	topicDetail, err := newTopic(m.Topic)
+	topicDetail, err := NewTopic(m.Topic)
 	require.Nil(t, err)
-	assert.Equal(t, topicDetail.localName, topic)
+	assert.Equal(t, topicDetail.LocalName, topic)
 
 	err = consumer.AckMessage(m)
 	require.Nil(t, err)
@@ -361,14 +361,14 @@ func TestConsumerTopicPattern(t *testing.T) {
 	assert.Nil(t, consumer.AckMessage(m1))
 	assert.Nil(t, consumer.AckMessage(m2))
 
-	t1, err := newTopic(m1.Topic)
+	t1, err := NewTopic(m1.Topic)
 	require.Nil(t, err)
-	assert.Equal(t, t1.localName, topic+"-1")
+	assert.Equal(t, t1.LocalName, topic+"-1")
 
-	t2, err := newTopic(m2.Topic)
+	t2, err := NewTopic(m2.Topic)
 	require.Nil(t, err)
 	assert.NotNil(t, t2)
-	assert.Equal(t, t2.localName, topic+"-2")
+	assert.Equal(t, t2.LocalName, topic+"-2")
 }
 
 func TestConsumerTopicPatternDiscovery(t *testing.T) {

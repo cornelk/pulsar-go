@@ -126,7 +126,7 @@ func (c *Client) NewProducer(ctx context.Context, config ProducerConfig) (*Produ
 	}
 
 	c.producers.add(id, prod)
-	c.topicLookup(prod.topic.completeTopicName, prod.topicReady)
+	c.topicLookup(prod.topic.CompleteName, prod.topicReady)
 
 	select {
 	case <-ctx.Done():
@@ -249,19 +249,19 @@ func (c *Client) nameSpaceTopicLookup(multi *multiTopicConsumer, config Consumer
 
 			topics := resp.GetTopicsOfNamespaceResponse.Topics
 			for _, name := range topics {
-				t, err := newTopic(name)
+				t, err := NewTopic(name)
 				if err != nil {
 					c.log.Printf("Processing topic name failed: %w", err)
 					continue
 				}
 
-				if !pattern.MatchString(t.localName) {
+				if !pattern.MatchString(t.LocalName) {
 					continue
 				}
 
-				if _, ok := knownTopics[t.completeTopicName]; !ok {
-					newTopics = append(newTopics, t.completeTopicName)
-					knownTopics[t.completeTopicName] = struct{}{}
+				if _, ok := knownTopics[t.CompleteName]; !ok {
+					newTopics = append(newTopics, t.CompleteName)
+					knownTopics[t.CompleteName] = struct{}{}
 				}
 			}
 

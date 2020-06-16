@@ -32,7 +32,7 @@ type Producer struct {
 	conn clientConn
 	req  *requests
 
-	topic *topic
+	topic *Topic
 	name  *string
 
 	producerID      uint64
@@ -62,7 +62,7 @@ func (config *ProducerConfig) Validate() error {
 	if config.Topic == "" {
 		return errors.New("topic is not set")
 	}
-	if _, err := newTopic(config.Topic); err != nil {
+	if _, err := NewTopic(config.Topic); err != nil {
 		return fmt.Errorf("checking topic name: %w", err)
 	}
 
@@ -74,7 +74,7 @@ func newProducer(closer producerCloser, conn brokerConnection, config ProducerCo
 	if err := config.Validate(); err != nil {
 		return nil, fmt.Errorf("validating config: %w", err)
 	}
-	topic, err := newTopic(config.Topic)
+	topic, err := NewTopic(config.Topic)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +204,7 @@ func (p *Producer) sendMessageCommand(msg *syncMessage) error {
 
 func (p *Producer) sendProduceCommand(reqID uint64) error {
 	cmd := &pb.CommandProducer{
-		Topic:      &p.topic.completeTopicName,
+		Topic:      &p.topic.CompleteName,
 		ProducerId: proto.Uint64(p.producerID),
 		RequestId:  proto.Uint64(reqID),
 	}

@@ -16,17 +16,18 @@ const (
 	domainSeparator     = "://"
 )
 
-type topic struct {
-	domain            string
-	tenant            string
-	namespace         string
-	localName         string
-	completeTopicName string
+// Topic represents a Pulsar Topic.
+type Topic struct {
+	Domain       string
+	Tenant       string
+	Namespace    string
+	LocalName    string
+	CompleteName string
 }
 
-// newTopic creates a new topic struct from the given topic name.
+// NewTopic creates a new topic struct from the given topic name.
 // The topic name can be in short form or a fully qualified topic name.
-func newTopic(name string) (*topic, error) {
+func NewTopic(name string) (*Topic, error) {
 	if !strings.Contains(name, domainSeparator) {
 		// The short topic name can be:
 		// - <topic>
@@ -59,14 +60,14 @@ func newTopic(name string) (*topic, error) {
 		return nil, errors.New("invalid topic name format")
 	}
 
-	t := &topic{
-		domain:            domain,
-		tenant:            parts[0],
-		namespace:         parts[1],
-		localName:         parts[2],
-		completeTopicName: "",
+	t := &Topic{
+		Domain:       domain,
+		Tenant:       parts[0],
+		Namespace:    parts[1],
+		LocalName:    parts[2],
+		CompleteName: "",
 	}
-	t.completeTopicName = fmt.Sprintf("%s://%s/%s/%s", t.domain, t.tenant,
-		t.namespace, t.localName)
+	t.CompleteName = fmt.Sprintf("%s://%s/%s/%s", t.Domain, t.Tenant,
+		t.Namespace, t.LocalName)
 	return t, nil
 }

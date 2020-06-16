@@ -39,7 +39,7 @@ func TestNewTopic(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		topic, err := newTopic(test.name)
+		topic, err := NewTopic(test.name)
 		if err == nil {
 			if test.error != "" {
 				t.Errorf("%v: unexpected error '%v'", test.name, err)
@@ -54,6 +54,6 @@ func TestNewTopic(t *testing.T) {
 			continue
 		}
 
-		assert.Equal(t, test.completeName, topic.completeTopicName)
+		assert.Equal(t, test.completeName, topic.CompleteName)
 	}
 }
