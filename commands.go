@@ -137,6 +137,7 @@ func (c *Client) handleMessage(base *command) error {
 			m := &Message{
 				consumerID: consumerID,
 				Body:       msg,
+				Topic:      cons.topic,
 				ID: &MessageID{
 					LedgerId:   id.LedgerId,
 					EntryId:    id.EntryId,

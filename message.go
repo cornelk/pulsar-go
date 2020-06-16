@@ -13,6 +13,7 @@ import (
 type Message struct {
 	consumerID uint64 // used to identify the consumer on Ack
 	Body       []byte
+	Topic      string
 	ID         *MessageID
 }
 
