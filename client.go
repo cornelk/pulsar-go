@@ -352,7 +352,7 @@ func (c *Client) Close() error {
 	}
 
 	for _, prods := range c.producers.all() {
-		_ = c.CloseConsumer(prods.producerID)
+		_ = c.CloseProducer(prods.producerID)
 	}
 
 	err := c.conn.close()
