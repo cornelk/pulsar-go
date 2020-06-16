@@ -66,7 +66,9 @@ func newTestProducer(t *testing.T, client *Client, topic string) (*Producer, str
 
 func TestSendReceiveEarliestPosition(t *testing.T) {
 	client := setup(t)
-	defer client.Close()
+	defer func() {
+		assert.Nil(t, client.Close())
+	}()
 
 	producer, topic := newTestProducer(t, client, "")
 
@@ -89,20 +91,20 @@ func TestSendReceiveEarliestPosition(t *testing.T) {
 	err = consumer.AckMessage(m)
 	require.Nil(t, err)
 
+	// restart consumer
 	err = consumer.Close()
 	require.Nil(t, err)
-
 	consumer, err = client.NewConsumer(ctx, consConf)
 	require.Nil(t, err)
 
 	readMessageAndCompare(t, consumer, msg2)
-
-	assert.Nil(t, producer.Close())
 }
 
 func TestSendReceiveLatestPositionExclusive(t *testing.T) {
 	client := setup(t)
-	defer client.Close()
+	defer func() {
+		assert.Nil(t, client.Close())
+	}()
 
 	producer, topic := newTestProducer(t, client, "")
 
@@ -129,17 +131,16 @@ func TestSendReceiveLatestPositionExclusive(t *testing.T) {
 	}
 
 	readMessageAndCompare(t, consumer, msg2)
-
-	assert.Nil(t, producer.Close())
 }
 
 func TestSendReceiveLatestPositionInclusive(t *testing.T) {
 	client := setup(t)
-	defer client.Close()
+	defer func() {
+		assert.Nil(t, client.Close())
+	}()
 
 	producer, topic := newTestProducer(t, client, "")
 	msg := sendMessage(t, producer, "hello world 1")
-	assert.Nil(t, producer.Close())
 
 	consConf := ConsumerConfig{
 		Topic:                   topic,
@@ -164,7 +165,9 @@ func TestSendReceiveLatestPositionInclusive(t *testing.T) {
 
 func TestEmptyTopicLatestPositionInclusive(t *testing.T) {
 	client := setup(t)
-	defer client.Close()
+	defer func() {
+		assert.Nil(t, client.Close())
+	}()
 
 	consConf := ConsumerConfig{
 		Topic:                   randomTopicName(),
@@ -188,7 +191,9 @@ func TestEmptyTopicLatestPositionInclusive(t *testing.T) {
 
 func TestConsumerNonExistingTopic(t *testing.T) {
 	client := setup(t)
-	defer client.Close()
+	defer func() {
+		assert.Nil(t, client.Close())
+	}()
 
 	consConf := ConsumerConfig{
 		Topic: randomTopicName(),
@@ -201,7 +206,9 @@ func TestConsumerNonExistingTopic(t *testing.T) {
 
 func TestNothingToReceive(t *testing.T) {
 	client := setup(t)
-	defer client.Close()
+	defer func() {
+		assert.Nil(t, client.Close())
+	}()
 
 	topic := randomTopicName()
 	consConf := ConsumerConfig{
@@ -234,7 +241,9 @@ func TestNothingToReceive(t *testing.T) {
 
 func TestSeek(t *testing.T) {
 	client := setup(t)
-	defer client.Close()
+	defer func() {
+		assert.Nil(t, client.Close())
+	}()
 
 	producer, topic := newTestProducer(t, client, "")
 
@@ -262,13 +271,13 @@ func TestSeek(t *testing.T) {
 	require.Nil(t, err)
 
 	readMessageAndCompare(t, consumer, msg1)
-
-	assert.Nil(t, producer.Close())
 }
 
 func TestProducerRestartSequence(t *testing.T) {
 	client := setup(t)
-	defer client.Close()
+	defer func() {
+		assert.Nil(t, client.Close())
+	}()
 
 	prod, topic := newTestProducer(t, client, "")
 
@@ -287,13 +296,13 @@ func TestProducerRestartSequence(t *testing.T) {
 	m3 := sendMessage(t, prod, "hello world 3")
 	assert.EqualValues(t, 2, *m3.ID.EntryId)
 	assert.Equal(t, *m1.ID.LedgerId, *m3.ID.LedgerId)
-
-	assert.Nil(t, prod.Close())
 }
 
 func TestProducerBrokerGeneratedName(t *testing.T) {
 	client := setup(t)
-	defer client.Close()
+	defer func() {
+		assert.Nil(t, client.Close())
+	}()
 
 	prodConf := ProducerConfig{
 		Topic: randomTopicName(),
@@ -303,13 +312,13 @@ func TestProducerBrokerGeneratedName(t *testing.T) {
 	prod, err := client.NewProducer(ctx, prodConf)
 	require.Nil(t, err)
 	assert.NotEmpty(t, prod.name)
-
-	assert.Nil(t, prod.Close())
 }
 
 func TestConsumerTopicPattern(t *testing.T) {
 	client := setup(t)
-	defer client.Close()
+	defer func() {
+		assert.Nil(t, client.Close())
+	}()
 
 	topic := randomTopicName()
 
@@ -348,14 +357,13 @@ func TestConsumerTopicPattern(t *testing.T) {
 
 	assert.Nil(t, consumer.AckMessage(m1))
 	assert.Nil(t, consumer.AckMessage(m2))
-
-	assert.Nil(t, producer1.Close())
-	assert.Nil(t, producer2.Close())
 }
 
 func TestConsumerTopicPatternDiscovery(t *testing.T) {
 	client := setup(t)
-	defer client.Close()
+	defer func() {
+		assert.Nil(t, client.Close())
+	}()
 
 	topic := randomTopicName()
 
@@ -380,13 +388,13 @@ func TestConsumerTopicPatternDiscovery(t *testing.T) {
 
 	assert.Nil(t, consumer.AckMessage(m))
 	assert.Equal(t, m.Body, msg.Body)
-
-	assert.Nil(t, producer.Close())
 }
 
 func TestGetLastMessageID(t *testing.T) {
 	client := setup(t)
-	defer client.Close()
+	defer func() {
+		assert.Nil(t, client.Close())
+	}()
 
 	producer, topic := newTestProducer(t, client, "")
 
@@ -412,6 +420,4 @@ func TestGetLastMessageID(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, msgid)
 	assert.EqualValues(t, *msgid.EntryId, 0)
-
-	assert.Nil(t, producer.Close())
 }
