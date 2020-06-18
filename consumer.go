@@ -16,7 +16,7 @@ import (
 // SubscriptionType ...
 type SubscriptionType pb.CommandSubscribe_SubType
 
-// subscription type options
+// Subscription type options.
 const (
 	ExclusiveSubscription = SubscriptionType(pb.CommandSubscribe_Exclusive)
 	SharedSubscription    = SubscriptionType(pb.CommandSubscribe_Shared)
@@ -27,7 +27,7 @@ const (
 // InitialPosition ...
 type InitialPosition pb.CommandSubscribe_InitialPosition
 
-// subscription initial position options
+// Subscription initial position options.
 const (
 	// Start reading from the end topic, only getting messages published after the
 	// reader was created.
@@ -84,17 +84,17 @@ type ConsumerConfig struct {
 	// will be determined by the broker.
 	Durable bool
 
-	// MessageChannel sets a channel that receives all messages that the
-	// consumer receives. If not set, a default channel for 1000 messages
-	// will be created.
-	MessageChannel chan *Message
-
 	// If true, the subscribe operation will cause a topic to be
 	// created if it does not exist already (and if topic auto-creation
 	// is allowed by broker.
 	// If false, the subscribe operation will fail if the topic
 	// does not exist.
 	ForceTopicCreation bool
+
+	// MessageChannel sets a channel that receives all messages that the
+	// consumer receives. If not set, a default channel for 1000 messages
+	// will be created.
+	MessageChannel chan *Message
 }
 
 // Consumer provides a high-level API for consuming messages from Pulsar.

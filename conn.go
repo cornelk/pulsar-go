@@ -195,7 +195,7 @@ func (c *conn) readBatchedMessage(b []byte) (meta *pb.SingleMessageMetadata, msg
 	size := binary.BigEndian.Uint32(b)
 	if int(size) > len(b)-4 {
 		return nil, nil, nil,
-			fmt.Errorf("message size %d exceeds buffer lenght %d", size, len(b)-4)
+			fmt.Errorf("message size %d exceeds buffer length %d", size, len(b)-4)
 	}
 
 	meta = &pb.SingleMessageMetadata{}

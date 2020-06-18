@@ -38,8 +38,8 @@ func newMultiTopicConsumer(closer consumerCloser, conn brokerConnection, config 
 	return c, nil
 }
 
-func (c *multiTopicConsumer) addConsumer(ID uint64, consumer *consumer) {
-	c.consumers.add(ID, consumer)
+func (c *multiTopicConsumer) addConsumer(id uint64, consumer *consumer) {
+	c.consumers.add(id, consumer)
 }
 
 func (c *multiTopicConsumer) changeConsumerID(consumer *consumer, oldID, newID uint64) {

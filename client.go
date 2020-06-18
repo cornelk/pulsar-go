@@ -1,7 +1,9 @@
+// Package pulsar implements a Apache Pulsar Client.
 package pulsar
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"reflect"
@@ -14,7 +16,7 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-// client constants
+// Client constants that get sent to Pulsar.
 const (
 	libraryVersion  = "0.01" // TODO use git version tag
 	protocolVersion = int32(pb.ProtocolVersion_v15)
@@ -290,7 +292,6 @@ func (c *Client) nameSpaceTopicLookup(multi *multiTopicConsumer, config Consumer
 
 		select {
 		case <-tick.C:
-			break
 		case <-c.ctx.Done():
 			return
 		}
@@ -380,7 +381,7 @@ func (c *Client) readCommands() {
 	for {
 		cmd, err := c.conn.readCommand()
 		if err != nil {
-			if err == ErrNetClosing {
+			if errors.Is(err, ErrNetClosing) {
 				return
 			}
 

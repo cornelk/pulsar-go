@@ -128,10 +128,8 @@ func TestSendReceiveLatestPositionExclusive(t *testing.T) {
 
 	// wait for message to be available
 	timeout := time.After(1 * time.Second)
-	select {
-	case <-timeout:
-		assert.True(t, consumer.HasNext())
-	}
+	<-timeout
+	assert.True(t, consumer.HasNext())
 
 	readMessageAndCompare(t, consumer, msg2)
 }
@@ -158,10 +156,8 @@ func TestSendReceiveLatestPositionInclusive(t *testing.T) {
 
 	// wait for message to be available
 	timeout := time.After(1 * time.Second)
-	select {
-	case <-timeout:
-		require.True(t, consumer.HasNext())
-	}
+	<-timeout
+	require.True(t, consumer.HasNext())
 
 	readMessageAndCompare(t, consumer, msg)
 }
@@ -186,10 +182,8 @@ func TestEmptyTopicLatestPositionInclusive(t *testing.T) {
 
 	// wait for message to be available
 	timeout := time.After(1 * time.Second)
-	select {
-	case <-timeout:
-		assert.False(t, consumer.HasNext())
-	}
+	<-timeout
+	assert.False(t, consumer.HasNext())
 }
 
 func TestConsumerNonExistingTopic(t *testing.T) {

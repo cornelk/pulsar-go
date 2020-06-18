@@ -40,7 +40,7 @@ func (c *Client) newCommandMap() commands {
 	}
 }
 
-// TODO: write unit test to proof that for every handled command we have a way to determine the request ID
+// TODO: write unit test to proof that for every handled command we have a way to determine the request ID.
 func (cmd *command) requestID() uint64 {
 	switch cmd.GetType() {
 	case pb.BaseCommand_CONNECTED, pb.BaseCommand_MESSAGE, pb.BaseCommand_PING:
