@@ -1,0 +1,32 @@
+run:
+  deadline: 5m
+
+  build-tags:
+    - integration
+
+linters:
+  enable-all: true
+  disable:
+    - gochecknoglobals
+    - interfacer
+    - wsl
+    - godox
+    - testpackage
+    - gomnd
+    - lll
+    - golint
+    - funlen
+    - nestif
+
+issues:
+  exclude-rules:
+    - linters:
+        - goerr113
+      text: "do not define dynamic errors"
+
+    - linters:
+        - stylecheck
+      text: "ST1003:"
+
+  exclude:
+    - Using the variable on range scope .* in function literal
