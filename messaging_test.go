@@ -344,22 +344,25 @@ func TestConsumerTopicPattern(t *testing.T) {
 	assert.Nil(t, consumer.AckMessage(m1))
 	assert.Nil(t, consumer.AckMessage(m2))
 
+	var topic1Msg, topic2Msg *Message
+
 	// messages are returned in random order
 	if string(m1.Body) == string(msg1.Body) {
-		assert.Equal(t, m2.Body, msg2.Body)
+		topic1Msg = m1
+		topic2Msg = m2
 	} else {
-		assert.Equal(t, m1.Body, msg2.Body)
-		assert.Equal(t, m2.Body, msg1.Body)
+		topic1Msg = m2
+		topic2Msg = m1
 	}
 
-	assert.Nil(t, consumer.AckMessage(m1))
-	assert.Nil(t, consumer.AckMessage(m2))
+	assert.Equal(t, topic1Msg.Body, msg1.Body)
+	assert.Equal(t, topic2Msg.Body, msg2.Body)
 
-	t1, err := NewTopic(m1.Topic)
+	t1, err := NewTopic(topic1Msg.Topic)
 	require.Nil(t, err)
 	assert.Equal(t, t1.LocalName, topic+"-1")
 
-	t2, err := NewTopic(m2.Topic)
+	t2, err := NewTopic(topic2Msg.Topic)
 	require.Nil(t, err)
 	assert.NotNil(t, t2)
 	assert.Equal(t, t2.LocalName, topic+"-2")
