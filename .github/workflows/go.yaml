@@ -10,7 +10,7 @@ jobs:
 
   build:
     if: "!contains(github.event.commits[0].message, '[skip ci]')"
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     name: Build
     runs-on: ubuntu-latest
