@@ -5,6 +5,7 @@ package pulsar
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,6 +25,28 @@ func newTestProducer(t *testing.T, client *Client, topic string) (*Producer, str
 	producer, err := client.NewProducer(ctx, prodConf)
 	require.Nil(t, err)
 	return producer, topic
+}
+
+func sendMessage(t *testing.T, producer *Producer, s string) *Message {
+	m := &Message{
+		Body: []byte(s),
+	}
+	var err error
+	ctx := context.Background()
+	id, err := producer.WriteMessage(ctx, m.Body)
+	require.Nil(t, err)
+	require.NotNil(t, id)
+	m.ID = id
+	return m
+}
+
+func sendMessageAsync(t *testing.T, producer *Producer, s string) *Message {
+	m := &Message{
+		Body: []byte(s),
+	}
+	ctx := context.Background()
+	require.Nil(t, producer.WriteMessageAsync(ctx, m.Body))
+	return m
 }
 
 func TestProducerConfigValidate(t *testing.T) {
@@ -74,4 +97,83 @@ func TestProducerBrokerGeneratedName(t *testing.T) {
 	prod, err := client.NewProducer(ctx, prodConf)
 	require.Nil(t, err)
 	assert.NotEmpty(t, prod.name)
+}
+
+func TestProducerBatchSize(t *testing.T) {
+	client := setup(t)
+	defer func() {
+		assert.Nil(t, client.Close())
+	}()
+
+	topic := randomTopicName()
+	prodConf := ProducerConfig{
+		Topic:        topic,
+		Name:         "test-producer",
+		BatchSize:    2,
+		BatchTimeout: time.Minute,
+	}
+
+	ctx := context.Background()
+	prod, err := client.NewProducer(ctx, prodConf)
+	require.Nil(t, err)
+
+	consConf := ConsumerConfig{
+		Topic:           topic,
+		InitialPosition: EarliestPosition,
+	}
+
+	consumer, err := client.NewConsumer(ctx, consConf)
+	require.Nil(t, err)
+
+	msg1 := sendMessageAsync(t, prod, "hello world 1")
+	msg2 := sendMessageAsync(t, prod, "hello world 2")
+
+	// wait for message to be available
+	timeout := time.After(1 * time.Second)
+	<-timeout
+	assert.True(t, consumer.HasNext())
+
+	readMessageAndCompare(t, consumer, msg1)
+	readMessageAndCompare(t, consumer, msg2)
+}
+
+func TestProducerBatchTimeout(t *testing.T) {
+	client := setup(t)
+	defer func() {
+		assert.Nil(t, client.Close())
+	}()
+
+	topic := randomTopicName()
+	prodConf := ProducerConfig{
+		Topic:        topic,
+		Name:         "test-producer",
+		BatchSize:    100,
+		BatchTimeout: 500 * time.Millisecond,
+	}
+
+	ctx := context.Background()
+
+	consConf := ConsumerConfig{
+		Topic:              topic,
+		InitialPosition:    EarliestPosition,
+		ForceTopicCreation: true,
+	}
+
+	// start consumer before producer to make for better test timing
+	consumer, err := client.NewConsumer(ctx, consConf)
+	require.Nil(t, err)
+
+	prod, err := client.NewProducer(ctx, prodConf)
+	require.Nil(t, err)
+
+	msg1 := sendMessageAsync(t, prod, "hello world 1")
+	msg2 := sendMessageAsync(t, prod, "hello world 2")
+
+	// wait for message to be available
+	timeout := time.After(1100 * time.Millisecond)
+	<-timeout
+	assert.True(t, consumer.HasNext())
+
+	readMessageAndCompare(t, consumer, msg1)
+	readMessageAndCompare(t, consumer, msg2)
 }

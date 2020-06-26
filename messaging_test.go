@@ -22,29 +22,19 @@ func setup(t *testing.T) *Client {
 	return client
 }
 
-func sendMessage(t *testing.T, producer *Producer, s string) *Message {
-	m := &Message{
-		Body: []byte(s),
-	}
-	var err error
-	ctx := context.Background()
-	id, err := producer.WriteMessage(ctx, m.Body)
-	require.Nil(t, err)
-	require.NotNil(t, id)
-	m.ID = id
-	return m
-}
-
 func readMessageAndCompare(t *testing.T, consumer Consumer, expected *Message) *Message {
 	ctx := context.Background()
 	m, err := consumer.ReadMessage(ctx)
 	require.Nil(t, err)
 	require.NotNil(t, m)
 	assert.Equal(t, expected.Body, m.Body)
-	assert.Equal(t, expected.ID.LedgerId, m.ID.LedgerId)
-	assert.Equal(t, expected.ID.EntryId, m.ID.EntryId)
-	assert.Equal(t, expected.ID.Partition, m.ID.Partition)
-	assert.Equal(t, expected.ID.BatchIndex, m.ID.BatchIndex)
+
+	if expected.ID != nil {
+		assert.Equal(t, expected.ID.LedgerId, m.ID.LedgerId)
+		assert.Equal(t, expected.ID.EntryId, m.ID.EntryId)
+		assert.Equal(t, expected.ID.Partition, m.ID.Partition)
+		assert.Equal(t, expected.ID.BatchIndex, m.ID.BatchIndex)
+	}
 	return m
 }
 
