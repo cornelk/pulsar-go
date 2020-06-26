@@ -1,10 +1,12 @@
 package pulsar
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"hash/crc32"
+	"math"
 	"sync"
 	"time"
 
@@ -18,8 +20,25 @@ type ProducerConfig struct {
 	// The topic to write messages to.
 	Topic string
 
+	// The name of the producer.
 	Name string
+
+	// Limit on how many messages will be buffered before being sent as a batch.
+	//
+	// The default is a batch size of 100 messages.
+	BatchSize int
+
+	// Time limit on how often a batch that is not full yet will be flushed and
+	// sent to Pulsar.
+	//
+	// The default is to flush every second.
+	BatchTimeout time.Duration
 }
+
+const (
+	defaultBatchSize    = 100
+	defaultBatchTimeout = time.Second
+)
 
 type producerCloser interface {
 	CloseProducer(producerID uint64) error
@@ -32,13 +51,15 @@ type Producer struct {
 	conn clientConn
 	req  *requests
 
-	topic *Topic
-	name  *string
+	topic        *Topic
+	name         *string
+	batchSize    int
+	batchTimeout time.Duration
 
 	producerID      uint64
 	pendingMessages chan *syncMessage
 	sequenceID      uint64
-	sendResults     map[uint64]*sendResult
+	sendResults     map[uint64][]*sendResult
 	sendResultsLock sync.Mutex
 
 	crcTable  *crc32.Table
@@ -65,6 +86,9 @@ func (config *ProducerConfig) Validate() error {
 	if _, err := NewTopic(config.Topic); err != nil {
 		return fmt.Errorf("checking topic name: %w", err)
 	}
+	if config.BatchSize < 0 || config.BatchSize > math.MaxInt32 {
+		return errors.New("invalid batch size")
+	}
 
 	return nil
 }
@@ -85,16 +109,25 @@ func newProducer(closer producerCloser, conn brokerConnection, config ProducerCo
 		conn: conn.conn,
 		req:  conn.req,
 
-		topic: topic,
-		name:  proto.String(config.Name),
+		topic:        topic,
+		name:         proto.String(config.Name),
+		batchSize:    config.BatchSize,
+		batchTimeout: config.BatchTimeout,
 
 		producerID:      producerID,
 		pendingMessages: make(chan *syncMessage, 1000),
-		sendResults:     map[uint64]*sendResult{},
+		sendResults:     map[uint64][]*sendResult{},
 
 		crcTable:  crc32.MakeTable(crc32.Castagnoli),
 		connected: make(chan struct{}, 1),
 		closer:    closer,
+	}
+
+	if p.batchSize == 0 {
+		p.batchSize = defaultBatchSize
+	}
+	if p.batchTimeout.Nanoseconds() == 0 {
+		p.batchTimeout = defaultBatchTimeout
 	}
 
 	return p, nil
@@ -156,50 +189,75 @@ func (p *Producer) WriteMessageAsync(ctx context.Context, msg []byte) error {
 	}
 }
 
-func (p *Producer) sendMessageCommand(msg *syncMessage) error {
+func (p *Producer) sendMessageCommand(batch []*syncMessage) error {
 	seq := proto.Uint64(p.sequenceID)
 	base := &pb.BaseCommand{
 		Type: pb.BaseCommand_SEND.Enum(),
 		Send: &pb.CommandSend{
 			ProducerId:  proto.Uint64(p.producerID),
 			SequenceId:  seq,
-			NumMessages: proto.Int32(1),
+			NumMessages: proto.Int32(int32(len(batch))),
 		},
 	}
 	p.sequenceID++
 
-	if msg.res != nil {
-		p.sendResultsLock.Lock()
-		p.sendResults[*seq] = msg.res
-		p.sendResultsLock.Unlock()
-	}
+	p.addBatchToSendResults(batch, *seq)
 
 	now := proto.Uint64(uint64(time.Now().UnixNano() / int64(time.Millisecond)))
-	meta := &pb.SingleMessageMetadata{
-		PayloadSize: proto.Int32(int32(len(msg.msg.Body))),
-		EventTime:   now,
-	}
 
-	var messagePayload []byte
-	var err error
-	if messagePayload, err = getBatchedMessagePayload(meta, msg.msg); err != nil {
-		return err
+	var messagePayload bytes.Buffer
+	for _, msg := range batch {
+		meta := &pb.SingleMessageMetadata{
+			PayloadSize: proto.Int32(int32(len(msg.msg.Body))),
+			EventTime:   now,
+		}
+
+		b, err := getBatchedMessagePayload(meta, msg.msg)
+		if err != nil {
+			return err
+		}
+		if _, err = messagePayload.Write(b); err != nil {
+			return err
+		}
 	}
 
 	msgMeta := &pb.MessageMetadata{
 		ProducerName:       p.name,
 		SequenceId:         seq,
 		PublishTime:        now,
-		UncompressedSize:   proto.Uint32(uint32(len(messagePayload))),
-		NumMessagesInBatch: proto.Int32(1),
+		Compression:        pb.CompressionType_NONE.Enum(),
+		UncompressedSize:   proto.Uint32(uint32(messagePayload.Len())),
+		NumMessagesInBatch: proto.Int32(int32(len(batch))),
 	}
-	var payload []byte
-	if payload, err = getMessageMetaData(p.crcTable, msgMeta, messagePayload); err != nil {
+
+	payload, err := getMessageMetaData(p.crcTable, msgMeta, messagePayload.Bytes())
+	if err != nil {
 		return err
 	}
 
-	err = p.conn.WriteCommand(base, payload)
-	return err
+	return p.conn.WriteCommand(base, payload)
+}
+
+// addBatchToSendResults adds the batch to the send results callback if any
+// message of the batch wants to know results in a callback channel.
+func (p *Producer) addBatchToSendResults(batch []*syncMessage, sequenceID uint64) {
+	sendResults := make([]*sendResult, len(batch))
+	var sendResultCallbacks int
+
+	for i, msg := range batch {
+		if msg.res != nil {
+			sendResults[i] = msg.res
+			sendResultCallbacks++
+		}
+	}
+
+	if sendResultCallbacks == 0 {
+		return
+	}
+
+	p.sendResultsLock.Lock()
+	p.sendResults[sequenceID] = sendResults
+	p.sendResultsLock.Unlock()
 }
 
 func (p *Producer) sendProduceCommand(reqID uint64) error {
@@ -236,7 +294,24 @@ func (p *Producer) handleProducerSuccess(cmd *command) error {
 }
 
 func (p *Producer) messageProducerWorker() {
+	var (
+		batch = make([]*syncMessage, 0, p.batchSize)
+	)
+
+	timer := time.NewTimer(p.batchTimeout)
+	defer timer.Stop()
+	timerRunning := true
+
 	for {
+		mustFlush := false
+
+		// reset the timer to tick in the given time interval after last send
+		if timerRunning && !timer.Stop() {
+			<-timer.C
+		}
+		timer.Reset(p.batchTimeout)
+		timerRunning = true
+
 		select {
 		case <-p.ctx.Done():
 			return
@@ -246,16 +321,31 @@ func (p *Producer) messageProducerWorker() {
 				return
 			}
 
-			if err := p.sendMessageCommand(m); err != nil {
-				p.log.Printf("Sending message command failed: %w", err)
+			batch = append(batch, m)
+			mustFlush = len(batch) >= p.batchSize
+
+		case <-timer.C:
+			timerRunning = false
+
+			if len(batch) > 0 {
+				mustFlush = true
 			}
 		}
+
+		if !mustFlush {
+			continue
+		}
+
+		if err := p.sendMessageCommand(batch); err != nil {
+			p.log.Printf("Sending message command failed: %w", err)
+		}
+		batch = batch[:0]
 	}
 }
 
 func (p *Producer) processSendResult(sequenceID uint64, id *pb.MessageIdData, err error) error {
 	p.sendResultsLock.Lock()
-	res, ok := p.sendResults[sequenceID]
+	results, ok := p.sendResults[sequenceID]
 	delete(p.sendResults, sequenceID)
 	p.sendResultsLock.Unlock()
 	if !ok {
@@ -268,9 +358,16 @@ func (p *Producer) processSendResult(sequenceID uint64, id *pb.MessageIdData, er
 		id.Partition = proto.Int32(-1)
 	}
 
-	res.id = id
-	res.err = err
+	for _, res := range results {
+		if res == nil {
+			continue
+		}
 
-	close(res.ch)
+		res.id = id
+		res.err = err
+
+		close(res.ch)
+	}
+
 	return nil
 }
