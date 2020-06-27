@@ -15,3 +15,14 @@ A Go client library for the [Apache Pulsar](https://pulsar.apache.org/) project.
 
 The library is in an early state of development, the API is not stable yet.
 Any help or input is welcome.
+
+## Alternative libraries
+
+* [apache/pulsar-client-go](https://github.com/apache/pulsar-client-go)
+  the official Golang Client that inspired the creation of this alternative Client.
+
+* [apache/pulsar/pulsar-client-go](https://github.com/apache/pulsar-client-go)
+  Cgo based Client library that will be deprecated.
+
+* [Comcast/pulsar-client-go](https://github.com/Comcast/pulsar-client-go)
+  an older Client that appears to not be maintained anymore and lacking features like Batching.
