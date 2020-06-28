@@ -16,8 +16,10 @@ type command struct {
 	custom      string // TODO: improve name
 }
 
-type commandHandler func(cmd *command) error
-type commands map[pb.BaseCommand_Type]commandHandler
+type (
+	commandHandler func(cmd *command) error
+	commands       map[pb.BaseCommand_Type]commandHandler
+)
 
 // noRequestID is used inside this library to signal that a command has no request ID.
 const noRequestID = 0

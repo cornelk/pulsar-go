@@ -312,9 +312,7 @@ func (p *Producer) handleProducerSuccess(cmd *command) error {
 }
 
 func (p *Producer) messageProducerWorker() {
-	var (
-		batch = make([]*syncMessage, 0, p.batchSize)
-	)
+	batch := make([]*syncMessage, 0, p.batchSize)
 
 	timer := time.NewTimer(p.batchTimeout)
 	defer timer.Stop()

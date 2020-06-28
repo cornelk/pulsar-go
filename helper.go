@@ -15,6 +15,7 @@ var earliestMessageID = &pb.MessageIdData{
 	EntryId:   proto.Uint64(math.MaxUint64),
 	Partition: proto.Int32(-1),
 }
+
 var latestMessageID = &pb.MessageIdData{
 	LedgerId:  proto.Uint64(math.MaxInt64),
 	EntryId:   proto.Uint64(math.MaxInt64),

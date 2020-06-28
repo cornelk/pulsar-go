@@ -191,7 +191,7 @@ func (c *conn) readMessageMetaData(payloadSize uint32) (msgMeta *pb.MessageMetad
 }
 
 // readBatchedMessage reads a batched message from the given payload buffer.
-func (c *conn) readBatchedMessage(b []byte) (meta *pb.SingleMessageMetadata, msg []byte, remaining []byte, err error) {
+func (c *conn) readBatchedMessage(b []byte) (meta *pb.SingleMessageMetadata, msg, remaining []byte, err error) {
 	size := binary.BigEndian.Uint32(b)
 	if int(size) > len(b)-4 {
 		return nil, nil, nil,
