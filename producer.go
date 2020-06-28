@@ -33,11 +33,17 @@ type ProducerConfig struct {
 	//
 	// The default is to flush every second.
 	BatchTimeout time.Duration
+
+	// Capacity of the internal producer message queue.
+	//
+	// The default is to use a queue capacity of 1000 messages.
+	QueueCapacity int
 }
 
 const (
-	defaultBatchSize    = 100
-	defaultBatchTimeout = time.Second
+	defaultBatchSize     = 100
+	defaultBatchTimeout  = time.Second
+	defaultQueueCapacity = 1000
 )
 
 type producerCloser interface {
@@ -89,6 +95,9 @@ func (config *ProducerConfig) Validate() error {
 	if config.BatchSize < 0 || config.BatchSize > math.MaxInt32 {
 		return errors.New("invalid batch size")
 	}
+	if config.QueueCapacity < 0 {
+		return errors.New("invalid queue capacity")
+	}
 
 	return nil
 }
@@ -114,14 +123,19 @@ func newProducer(closer producerCloser, conn brokerConnection, config ProducerCo
 		batchSize:    config.BatchSize,
 		batchTimeout: config.BatchTimeout,
 
-		producerID:      producerID,
-		pendingMessages: make(chan *syncMessage, 1000),
-		sendResults:     map[uint64][]*sendResult{},
+		producerID:  producerID,
+		sendResults: map[uint64][]*sendResult{},
 
 		crcTable:  crc32.MakeTable(crc32.Castagnoli),
 		connected: make(chan struct{}, 1),
 		closer:    closer,
 	}
+
+	queueCapacity := config.QueueCapacity
+	if queueCapacity == 0 {
+		queueCapacity = defaultQueueCapacity
+	}
+	p.pendingMessages = make(chan *syncMessage, queueCapacity)
 
 	if p.batchSize == 0 {
 		p.batchSize = defaultBatchSize
@@ -148,7 +162,9 @@ func (p *Producer) Close() error {
 	return p.closer.CloseProducer(p.producerID)
 }
 
-// WriteMessage ...
+// WriteMessage puts the message into the message queue, blocks until the
+// message has been sent and an acknowledgement message is received from
+// Pulsar.
 func (p *Producer) WriteMessage(ctx context.Context, msg []byte) (*MessageID, error) {
 	res := &sendResult{
 		ch: make(chan struct{}),
@@ -171,7 +187,9 @@ func (p *Producer) WriteMessage(ctx context.Context, msg []byte) (*MessageID, er
 	}
 }
 
-// WriteMessageAsync ...
+// WriteMessageAsync puts the message into the message queue.
+// If the message queue is full, this function will block until it can write
+// to the queue. The queue size can be specified in the Producer options.
 func (p *Producer) WriteMessageAsync(ctx context.Context, msg []byte) error {
 	m := &syncMessage{
 		msg: &Message{
