@@ -1,6 +1,9 @@
+// +build integration
+
 package pulsar
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -42,4 +45,34 @@ func TestNewClient(t *testing.T) {
 			assert.Equal(t, c.expectedURL, client.host)
 		})
 	}
+}
+
+func TestClientTopics(t *testing.T) {
+	client := setup(t)
+	defer func() {
+		assert.Nil(t, client.Close())
+	}()
+
+	topic := randomTopicName()
+	prodConf := ProducerConfig{
+		Topic: topic,
+		Name:  "test-producer",
+	}
+
+	ctx := context.Background()
+	_, err := client.NewProducer(ctx, prodConf)
+	require.Nil(t, err)
+
+	topics, err := client.Topics(DefaultNamespace)
+	require.Nil(t, err)
+
+	var found bool
+	for _, t := range topics {
+		if t.LocalName == topic {
+			found = true
+			break
+		}
+	}
+
+	assert.True(t, found, "topic not found in list")
 }
