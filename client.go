@@ -242,15 +242,14 @@ func (c *Client) nameSpaceTopicLookup(multi *multiTopicConsumer, config Consumer
 		var newTopics []string
 
 		reqID := c.req.newID()
-		cmd := newGetTopicsOfNamespaceCommand(reqID)
+		cmd := newGetTopicsOfNamespaceCommand(reqID, DefaultNamespace)
 
 		respHandler := func(resp *command) error {
 			if resp.err != nil {
 				return resp.err
 			}
 
-			topics := resp.GetTopicsOfNamespaceResponse.Topics
-			for _, name := range topics {
+			for _, name := range resp.GetTopicsOfNamespaceResponse.Topics {
 				t, err := NewTopic(name)
 				if err != nil {
 					c.log.Printf("Processing topic name failed: %w", err)
@@ -418,4 +417,38 @@ func newPartitionedMetadataCommand(reqID uint64, topic string) *pb.BaseCommand {
 			RequestId: proto.Uint64(reqID),
 		},
 	}
+}
+
+// Topics returns the topics of a namespace.
+// Defaults to DefaultNamespace if no namespace is given.
+func (c *Client) Topics(namespace string) ([]*Topic, error) {
+	if namespace == "" {
+		namespace = DefaultNamespace
+	}
+
+	reqID := c.req.newID()
+	cmd := newGetTopicsOfNamespaceCommand(reqID, namespace)
+
+	var topics []*Topic
+	respHandler := func(resp *command) error {
+		if resp.err != nil {
+			return resp.err
+		}
+
+		for _, name := range resp.GetTopicsOfNamespaceResponse.Topics {
+			t, err := NewTopic(name)
+			if err != nil {
+				return err
+			}
+			topics = append(topics, t)
+		}
+		return nil
+	}
+
+	err := c.conn.SendCallbackCommand(c.req, reqID, cmd, respHandler)
+	if err != nil {
+		return nil, err
+	}
+
+	return topics, nil
 }

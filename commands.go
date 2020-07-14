@@ -252,12 +252,12 @@ func newCloseProducerCommand(producerID, requestID uint64) *pb.BaseCommand {
 	}
 }
 
-func newGetTopicsOfNamespaceCommand(reqID uint64) *pb.BaseCommand {
+func newGetTopicsOfNamespaceCommand(requestID uint64, namespace string) *pb.BaseCommand {
 	return &pb.BaseCommand{
 		Type: pb.BaseCommand_GET_TOPICS_OF_NAMESPACE.Enum(),
 		GetTopicsOfNamespace: &pb.CommandGetTopicsOfNamespace{
-			RequestId: proto.Uint64(reqID),
-			Namespace: proto.String(publicTenant + "/" + defaultNamespace),
+			RequestId: proto.Uint64(requestID),
+			Namespace: proto.String(publicTenant + "/" + namespace),
 			Mode:      pb.CommandGetTopicsOfNamespace_PERSISTENT.Enum(),
 		},
 	}

@@ -9,7 +9,7 @@ import (
 // ...
 const (
 	publicTenant     = "public"
-	defaultNamespace = "default"
+	DefaultNamespace = "default"
 	// TODO support partitioning partitionedTopicSuffix = "-partition-"
 	persistentDomain    = "persistent"
 	nonPersistentDomain = "non-persistent"
@@ -39,7 +39,7 @@ func NewTopic(name string) (*Topic, error) {
 				name
 		case 1:
 			name = persistentDomain + domainSeparator +
-				publicTenant + "/" + defaultNamespace + "/" + parts[0]
+				publicTenant + "/" + DefaultNamespace + "/" + parts[0]
 		default:
 			return nil, errors.New("invalid topic short name format")
 		}
