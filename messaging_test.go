@@ -363,3 +363,40 @@ func TestGetLastMessageID(t *testing.T) {
 	require.NotNil(t, msgid)
 	assert.EqualValues(t, *msgid.EntryId, 0)
 }
+
+func TestConsumer_ReceiverQueueSize(t *testing.T) {
+	client := setup(t)
+	defer func() {
+		assert.NoError(t, client.Close())
+	}()
+
+	producer, topic := newTestProducer(t, client, "")
+
+	receiverQueueSize := 1000
+	messageCount := receiverQueueSize * 3
+	messages := make([]*Message, messageCount)
+
+	// Publish an extra message over the configured queue size.
+	for i := 0; i < messageCount; i++ {
+		messages[i] = sendMessage(t, producer, "hello world")
+	}
+
+	// Create an exclusive consumer for the topic.
+	consConf := ConsumerConfig{
+		Topic:           topic,
+		Subscription:    "test-sub",
+		InitialPosition: EarliestPosition,
+		Durable:         true,
+		MessageChannel:  make(chan *Message, receiverQueueSize),
+	}
+
+	ctx := context.Background()
+	consumer, err := client.NewConsumer(ctx, consConf)
+	require.Nil(t, err)
+
+	// Read and ack the available messages for this consumer.
+	for i := 0; i < messageCount; i++ {
+		m := readMessageAndCompare(t, consumer, messages[i])
+		require.NoError(t, consumer.AckMessage(m))
+	}
+}

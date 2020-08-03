@@ -16,8 +16,9 @@ func newTestProducer(t *testing.T, client *Client, topic string) (*Producer, str
 		topic = randomTopicName()
 	}
 	prodConf := ProducerConfig{
-		Topic: topic,
-		Name:  "test-producer",
+		Topic:     topic,
+		Name:      "test-producer",
+		BatchSize: 1,
 	}
 
 	ctx := context.Background()

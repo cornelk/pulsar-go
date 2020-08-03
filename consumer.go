@@ -152,6 +152,10 @@ type consumer struct {
 	stateMu    sync.RWMutex
 	closer     consumerCloser
 	multi      *multiTopicConsumer // set if managed by a multi topic consumer
+
+	messagePermits uint32
+	usedPermits    uint32
+	permitsMu      sync.Mutex
 }
 
 // Validate method validates the config properties.
@@ -208,6 +212,11 @@ func newConsumer(closer consumerCloser, conn brokerConnection, config ConsumerCo
 	} else {
 		c.incomingMessages = config.MessageChannel
 	}
+	if cap(c.incomingMessages) > math.MaxUint32 {
+		c.messagePermits = math.MaxUint32
+	} else {
+		c.messagePermits = uint32(cap(c.incomingMessages))
+	}
 
 	if !config.Durable {
 		if config.StartMessageID != nil {
@@ -249,7 +258,7 @@ func (c *consumer) topicLookupFinished(cmd *command) error {
 	if c.startMessageIDInclusive && c.startMessageID == latestMessageID && !c.startMessageIDSeekDone {
 		c.req.addCallback(id, c.getLastMessageID)
 	} else {
-		c.req.addCallback(id, c.sendFlowCommand)
+		c.req.addCallback(id, c.subscribedSendFlowCommand)
 	}
 
 	c.stateMu.Lock()
@@ -278,7 +287,7 @@ func (c *consumer) seekToLastMessageID(cmd *command) error {
 		return cmd.err
 	}
 	if *cmd.GetLastMessageIdResponse.LastMessageId.EntryId == math.MaxUint64 {
-		return c.sendFlowCommand(cmd) // empty topic
+		return c.subscribedSendFlowCommand(cmd) // empty topic
 	}
 
 	reqID := c.req.newID()
@@ -305,8 +314,21 @@ func (c *consumer) ReadMessage(ctx context.Context) (*Message, error) {
 			return nil, io.EOF
 		}
 
-		return m, nil
+		err := c.useMessagePermit()
+		return m, err
 	}
+}
+
+func (c *consumer) useMessagePermit() error {
+	c.permitsMu.Lock()
+	c.usedPermits++
+	hasPermits := c.usedPermits < c.messagePermits
+	c.permitsMu.Unlock()
+
+	if hasPermits {
+		return nil
+	}
+	return c.sendFlowCommand()
 }
 
 func (c *consumer) HasNext() bool {
@@ -392,7 +414,7 @@ func (c *consumer) sendSubscribeCommand(topic string, reqID uint64) error {
 	return c.conn.WriteCommand(base, nil)
 }
 
-func (c *consumer) sendFlowCommand(cmd *command) error {
+func (c *consumer) subscribedSendFlowCommand(cmd *command) error {
 	defer func() {
 		c.connected <- cmd.err
 	}()
@@ -402,12 +424,19 @@ func (c *consumer) sendFlowCommand(cmd *command) error {
 	c.stateMu.Lock()
 	c.state = consumerSubscribed
 	c.stateMu.Unlock()
+	return c.sendFlowCommand()
+}
+
+func (c *consumer) sendFlowCommand() error {
+	c.permitsMu.Lock()
+	c.usedPermits = 0
+	c.permitsMu.Unlock()
 
 	base := &pb.BaseCommand{
 		Type: pb.BaseCommand_FLOW.Enum(),
 		Flow: &pb.CommandFlow{
 			ConsumerId:     proto.Uint64(c.consumerID),
-			MessagePermits: proto.Uint32(1000),
+			MessagePermits: proto.Uint32(c.messagePermits),
 		},
 	}
 	return c.conn.WriteCommand(base, nil)
