@@ -372,12 +372,12 @@ func TestConsumer_ReceiverQueueSize(t *testing.T) {
 
 	producer, topic := newTestProducer(t, client, "")
 
-	// The default receiver queue size for Pulsar consumers is 1000 messages.
-	const receiverQueueSize = 2000
-	messages := make([]*Message, receiverQueueSize+1)
+	receiverQueueSize := 1000
+	messageCount := receiverQueueSize * 3
+	messages := make([]*Message, messageCount)
 
 	// Publish an extra message over the configured queue size.
-	for i := 0; i < receiverQueueSize+1; i++ {
+	for i := 0; i < messageCount; i++ {
 		messages[i] = sendMessage(t, producer, "hello world")
 	}
 
@@ -387,6 +387,7 @@ func TestConsumer_ReceiverQueueSize(t *testing.T) {
 		Subscription:    "test-sub",
 		InitialPosition: EarliestPosition,
 		Durable:         true,
+		MessageChannel:  make(chan *Message, receiverQueueSize),
 	}
 
 	ctx := context.Background()
@@ -394,22 +395,8 @@ func TestConsumer_ReceiverQueueSize(t *testing.T) {
 	require.Nil(t, err)
 
 	// Read and ack the available messages for this consumer.
-	for i := 0; i < receiverQueueSize; i++ {
+	for i := 0; i < messageCount; i++ {
 		m := readMessageAndCompare(t, consumer, messages[i])
 		require.NoError(t, consumer.AckMessage(m))
 	}
-
-	// At this point there's a single unacknowledged message remaining in the topic.
-	// Verify that the current consumer cannot receive it.
-	require.False(t, consumer.HasNext())
-
-	// Recreate the consumer to receive the last message.
-	require.NoError(t, consumer.Close())
-
-	consumer, err = client.NewConsumer(ctx, consConf)
-	require.Nil(t, err)
-
-	// Receive and ack the last message.
-	m := readMessageAndCompare(t, consumer, messages[receiverQueueSize])
-	require.NoError(t, consumer.AckMessage(m))
 }

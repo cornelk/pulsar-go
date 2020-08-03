@@ -155,7 +155,7 @@ type consumer struct {
 
 	messagePermits uint32
 	usedPermits    uint32
-	permitsMu      sync.RWMutex
+	permitsMu      sync.Mutex
 }
 
 // Validate method validates the config properties.
@@ -212,7 +212,7 @@ func newConsumer(closer consumerCloser, conn brokerConnection, config ConsumerCo
 	} else {
 		c.incomingMessages = config.MessageChannel
 	}
-	if len(c.incomingMessages) > math.MaxUint32 {
+	if cap(c.incomingMessages) > math.MaxUint32 {
 		c.messagePermits = math.MaxUint32
 	} else {
 		c.messagePermits = uint32(cap(c.incomingMessages))
@@ -321,10 +321,11 @@ func (c *consumer) ReadMessage(ctx context.Context) (*Message, error) {
 
 func (c *consumer) useMessagePermit() error {
 	c.permitsMu.Lock()
-	defer c.permitsMu.Unlock()
-
 	c.usedPermits++
-	if c.usedPermits < c.messagePermits {
+	hasPermits := c.usedPermits < c.messagePermits
+	c.permitsMu.Unlock()
+
+	if hasPermits {
 		return nil
 	}
 	return c.sendFlowCommand()
@@ -427,7 +428,10 @@ func (c *consumer) subscribedSendFlowCommand(cmd *command) error {
 }
 
 func (c *consumer) sendFlowCommand() error {
+	c.permitsMu.Lock()
 	c.usedPermits = 0
+	c.permitsMu.Unlock()
+
 	base := &pb.BaseCommand{
 		Type: pb.BaseCommand_FLOW.Enum(),
 		Flow: &pb.CommandFlow{
