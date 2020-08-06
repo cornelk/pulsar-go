@@ -314,8 +314,7 @@ func (c *consumer) ReadMessage(ctx context.Context) (*Message, error) {
 			return nil, io.EOF
 		}
 
-		err := c.useMessagePermit()
-		return m, err
+		return m, nil
 	}
 }
 

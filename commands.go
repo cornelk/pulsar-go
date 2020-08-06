@@ -157,7 +157,8 @@ func (c *Client) handleMessage(base *command) error {
 		cons.incomingMessages <- m
 	}
 
-	return nil
+	// getting a single message or batch counts as 1 permit
+	return cons.useMessagePermit()
 }
 
 func (c *Client) handleSendReceiptCommand(base *command) error {
