@@ -154,6 +154,10 @@ func (c *Client) createNewConsumer(config ConsumerConfig) (*consumer, error) {
 // NewConsumer creates a new Consumer, returning after the connection
 // has been made.
 func (c *Client) NewConsumer(ctx context.Context, config ConsumerConfig) (Consumer, error) {
+	if err := config.Validate(); err != nil {
+		return nil, fmt.Errorf("validating config: %w", err)
+	}
+
 	// TODO check connected state
 
 	if config.TopicPattern != "" {

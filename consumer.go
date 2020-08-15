@@ -160,24 +160,28 @@ type consumer struct {
 
 // Validate method validates the config properties.
 func (config *ConsumerConfig) Validate() error {
-	if config.Topic == "" && config.TopicPattern == "" {
-		return errors.New("topic is not set")
-	}
-	if config.Topic != "" && config.TopicPattern != "" {
-		return errors.New("topic and topic pattern are exclusive")
-	}
 	if config.StartMessageID != nil {
 		id := &pb.MessageIdData{}
 		if err := proto.Unmarshal(config.StartMessageID, id); err != nil {
 			return fmt.Errorf("start message id unmarshalling: %w", err)
 		}
 	}
-	if config.TopicPattern != "" {
+	if config.TopicPattern == "" {
+		if config.Topic == "" {
+			return errors.New("topic is not set")
+		}
+	} else {
+		if config.Topic != "" {
+			return errors.New("topic and topic pattern are exclusive")
+		}
 		if _, err := regexp.Compile(config.TopicPattern); err != nil {
 			return fmt.Errorf("topic pattern regular expression compiling: %w", err)
 		}
 		if config.TopicPatternDiscoveryInterval < 0 {
 			return errors.New("invalid topic pattern discovery interval set")
+		}
+		if config.StartMessageID != nil {
+			return errors.New("start message id not valid for pattern consumer")
 		}
 	}
 	return nil
@@ -185,10 +189,6 @@ func (config *ConsumerConfig) Validate() error {
 
 // newConsumer creates and returns a new Consumer configured with config.
 func newConsumer(closer consumerCloser, conn brokerConnection, config ConsumerConfig, consumerID uint64) (*consumer, error) {
-	if err := config.Validate(); err != nil {
-		return nil, fmt.Errorf("validating config: %w", err)
-	}
-
 	c := &consumer{
 		ctx:  conn.ctx,
 		conn: conn.conn,
