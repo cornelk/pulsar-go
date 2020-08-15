@@ -17,6 +17,8 @@ linters:
     - golint
     - funlen
     - nestif
+    - nlreturn
+    - exhaustive
 
 issues:
   exclude-rules:
@@ -30,3 +32,4 @@ issues:
 
   exclude:
     - Using the variable on range scope .* in function literal
+    - Top level comment should end in a period
