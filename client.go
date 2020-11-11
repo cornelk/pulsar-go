@@ -234,6 +234,11 @@ func (c *Client) nameSpaceTopicLookup(multi *multiTopicConsumer, config Consumer
 		c.log.Printf("Compiling topic regexp pattern failed: %w", err)
 		return
 	}
+	topic, err := NewTopic(config.TopicPattern)
+	if err != nil {
+		c.log.Printf("Processing topic name failed: %w", err)
+		return
+	}
 
 	config.MessageChannel = multi.incomingMessages
 	config.TopicPattern = ""
@@ -246,7 +251,7 @@ func (c *Client) nameSpaceTopicLookup(multi *multiTopicConsumer, config Consumer
 		var newTopics []string
 
 		reqID := c.req.newID()
-		cmd := newGetTopicsOfNamespaceCommand(reqID, DefaultNamespace)
+		cmd := newGetTopicsOfNamespaceCommand(reqID, topic.Namespace)
 
 		respHandler := func(resp *command) error {
 			if resp.err != nil {
