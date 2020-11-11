@@ -19,6 +19,9 @@ linters:
     - nestif
     - nlreturn
     - exhaustive
+    - exhaustivestruct
+    - errorlint
+    - wrapcheck
 
 issues:
   exclude-rules:
