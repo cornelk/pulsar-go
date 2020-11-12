@@ -229,14 +229,14 @@ func (c *Client) topicLookup(topic string, topicReady requestCallback) {
 }
 
 func (c *Client) nameSpaceTopicLookup(multi *multiTopicConsumer, config ConsumerConfig) {
-	pattern, err := regexp.Compile(config.TopicPattern)
-	if err != nil {
-		c.log.Printf("Compiling topic regexp pattern failed: %w", err)
-		return
-	}
 	topic, err := NewTopic(config.TopicPattern)
 	if err != nil {
 		c.log.Printf("Processing topic name failed: %w", err)
+		return
+	}
+	pattern, err := regexp.Compile(topic.CompleteName)
+	if err != nil {
+		c.log.Printf("Compiling topic regexp pattern failed: %w", err)
 		return
 	}
 
@@ -265,7 +265,7 @@ func (c *Client) nameSpaceTopicLookup(multi *multiTopicConsumer, config Consumer
 					continue
 				}
 
-				if !pattern.MatchString(t.LocalName) {
+				if !pattern.MatchString(t.CompleteName) {
 					continue
 				}
 
