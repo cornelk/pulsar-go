@@ -4,8 +4,8 @@ package pulsar
 
 import (
 	"context"
-	"fmt"
 	"math"
+	"strings"
 	"testing"
 	"time"
 
@@ -173,8 +173,7 @@ func TestConsumerNonExistingTopic(t *testing.T) {
 
 	ctx := context.Background()
 	_, err := client.NewConsumer(ctx, consConf)
-	expected := fmt.Sprintf("TopicNotFound: Topic persistent://public/default/%s does not exist", consConf.Topic)
-	assert.Equal(t, expected, err.Error())
+	assert.True(t, strings.HasPrefix(err.Error(), "TopicNotFound:"))
 }
 
 func TestNothingToReceive(t *testing.T) {
