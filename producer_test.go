@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -35,6 +36,9 @@ func sendMessage(t *testing.T, producer *Producer, s string) *Message {
 	var err error
 	ctx := context.Background()
 	id, err := producer.WriteMessage(ctx, m.Body)
+	if id.BatchIndex == nil {
+		id.BatchIndex = proto.Int32(0)
+	}
 	require.Nil(t, err)
 	require.NotNil(t, id)
 	m.ID = id
