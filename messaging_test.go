@@ -5,6 +5,7 @@ package pulsar
 import (
 	"context"
 	"math"
+	"strings"
 	"testing"
 	"time"
 
@@ -63,7 +64,7 @@ func TestSendReceiveEarliestPosition(t *testing.T) {
 	m := readMessageAndCompare(t, consumer, msg1)
 	topicDetail, err := NewTopic(m.Topic)
 	require.Nil(t, err)
-	assert.Equal(t, topicDetail.LocalName, topic)
+	assert.Equal(t, topic, topicDetail.LocalName)
 
 	err = consumer.AckMessage(m)
 	require.Nil(t, err)
@@ -172,7 +173,7 @@ func TestConsumerNonExistingTopic(t *testing.T) {
 
 	ctx := context.Background()
 	_, err := client.NewConsumer(ctx, consConf)
-	assert.Equal(t, err.Error(), "TopicNotFound: Topic does not exist")
+	assert.True(t, strings.HasPrefix(err.Error(), "TopicNotFound:"))
 }
 
 func TestNothingToReceive(t *testing.T) {
@@ -293,12 +294,12 @@ func TestConsumerTopicPattern(t *testing.T) {
 
 	t1, err := NewTopic(topic1Msg.Topic)
 	require.Nil(t, err)
-	assert.Equal(t, t1.LocalName, topic+"-1")
+	assert.Equal(t, topic+"-1", t1.LocalName)
 
 	t2, err := NewTopic(topic2Msg.Topic)
 	require.Nil(t, err)
 	assert.NotNil(t, t2)
-	assert.Equal(t, t2.LocalName, topic+"-2")
+	assert.Equal(t, topic+"-2", t2.LocalName)
 }
 
 func TestConsumerTopicPatternDiscovery(t *testing.T) {
@@ -329,7 +330,7 @@ func TestConsumerTopicPatternDiscovery(t *testing.T) {
 	require.NotNil(t, m)
 
 	assert.Nil(t, consumer.AckMessage(m))
-	assert.Equal(t, m.Body, msg.Body)
+	assert.Equal(t, msg.Body, m.Body)
 }
 
 func TestGetLastMessageID(t *testing.T) {
@@ -361,7 +362,7 @@ func TestGetLastMessageID(t *testing.T) {
 	msgid, err = consumer.LastMessageID()
 	require.Nil(t, err)
 	require.NotNil(t, msgid)
-	assert.EqualValues(t, *msgid.EntryId, 0)
+	assert.EqualValues(t, 0, *msgid.EntryId)
 }
 
 func TestConsumer_ReceiverQueueSize(t *testing.T) {

@@ -129,7 +129,11 @@ func (c *Client) handleMessage(base *command) error {
 	}
 
 	id := cmd.MessageId
+	permits := uint64(1)
 	if num := msgMeta.GetNumMessagesInBatch(); num > 0 {
+		// each batch message counts as 1 permit
+		permits = uint64(num)
+
 		var msg []byte
 		for i := int32(0); i < num; i++ {
 			_, msg, payload, err = c.conn.readBatchedMessage(payload)
@@ -144,7 +148,7 @@ func (c *Client) handleMessage(base *command) error {
 					LedgerId:   id.LedgerId,
 					EntryId:    id.EntryId,
 					Partition:  id.Partition,
-					BatchIndex: id.BatchIndex,
+					BatchIndex: proto.Int32(i),
 				},
 			}
 			cons.incomingMessages <- m
@@ -157,8 +161,7 @@ func (c *Client) handleMessage(base *command) error {
 		cons.incomingMessages <- m
 	}
 
-	// getting a single message or batch counts as 1 permit
-	return cons.useMessagePermit()
+	return cons.useMessagePermits(permits)
 }
 
 func (c *Client) handleSendReceiptCommand(base *command) error {

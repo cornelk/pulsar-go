@@ -318,10 +318,13 @@ func (c *consumer) ReadMessage(ctx context.Context) (*Message, error) {
 	}
 }
 
-func (c *consumer) useMessagePermit() error {
+func (c *consumer) useMessagePermits(permits uint64) error {
+	hasPermits := false
 	c.permitsMu.Lock()
-	c.usedPermits++
-	hasPermits := c.usedPermits < c.messagePermits
+	if permits <= math.MaxUint32 && uint64(c.usedPermits)+permits <= math.MaxUint32 {
+		c.usedPermits += uint32(permits)
+		hasPermits = c.usedPermits < c.messagePermits
+	}
 	c.permitsMu.Unlock()
 
 	if hasPermits {
