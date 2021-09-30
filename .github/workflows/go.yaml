@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: [1.13, 1.14, 1.15]
+        go: [1.15, 1.16, 1.17]
 
     services:
       pulsar:
@@ -41,7 +41,7 @@ jobs:
         run: go build -v .
 
       - name: Test
-        run: go test -tags integration -race -count 10 -v .
+        run: go test -tags integration -race -count 3 .
 
       - name: Install linter
         run: "curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin v1.32.2"
