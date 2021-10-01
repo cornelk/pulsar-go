@@ -20,8 +20,6 @@ type SubscriptionType pb.CommandSubscribe_SubType
 const (
 	ExclusiveSubscription = SubscriptionType(pb.CommandSubscribe_Exclusive)
 	SharedSubscription    = SubscriptionType(pb.CommandSubscribe_Shared)
-	// FailoverSubscription  = SubscriptionType(pb.CommandSubscribe_Failover)
-	// KeySharedSubscription = SubscriptionType(pb.CommandSubscribe_Key_Shared)
 )
 
 // InitialPosition ...
