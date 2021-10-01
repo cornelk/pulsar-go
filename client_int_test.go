@@ -61,10 +61,10 @@ func TestClientTopics(t *testing.T) {
 
 	ctx := context.Background()
 	_, err := client.NewProducer(ctx, prodConf)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	topics, err := client.Topics(DefaultNamespace)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	var found bool
 	for _, t := range topics {

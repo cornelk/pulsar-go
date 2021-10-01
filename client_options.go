@@ -15,7 +15,8 @@ func WithLogger(logger Logger) ClientOption {
 	}
 }
 
-// WithLogger sets a custom logger.
+// withDialer sets a custom dialer.
+// Used for testing.
 func withDialer(dialer dialer) ClientOption {
 	return func(conf *clientConfig) {
 		conf.dialer = dialer

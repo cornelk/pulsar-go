@@ -10,7 +10,7 @@ func TestClientTopicsCommunication(t *testing.T) {
 	client, err := NewClient("pulsar://localhost:6650",
 		WithLogger(newTestLogger(t)),
 		withDialer(defaultDialer))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, client)
 
 	/*

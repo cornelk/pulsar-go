@@ -26,7 +26,7 @@ func newTestProducer(t *testing.T, client *Client, topic string) (*Producer, str
 	ctx := context.Background()
 	var err error
 	producer, err := client.NewProducer(ctx, prodConf)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	return producer, topic
 }
 
@@ -41,7 +41,7 @@ func sendMessage(t *testing.T, producer *Producer, s string) *Message {
 	if id.BatchIndex == nil {
 		id.BatchIndex = proto.Int32(0)
 	}
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, id)
 	m.ID = id
 	return m
@@ -82,7 +82,7 @@ func TestProducerRestartSequence(t *testing.T) {
 
 	// restart producer
 	err := prod.Close()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	prod, _ = newTestProducer(t, client, topic)
 	assert.EqualValues(t, 0, prod.sequenceID)
 
@@ -103,7 +103,7 @@ func TestProducerBrokerGeneratedName(t *testing.T) {
 
 	ctx := context.Background()
 	prod, err := client.NewProducer(ctx, prodConf)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotEmpty(t, prod.name)
 }
 
@@ -123,7 +123,7 @@ func TestProducerBatchSize(t *testing.T) {
 
 	ctx := context.Background()
 	prod, err := client.NewProducer(ctx, prodConf)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	consConf := ConsumerConfig{
 		Topic:           topic,
@@ -131,7 +131,7 @@ func TestProducerBatchSize(t *testing.T) {
 	}
 
 	consumer, err := client.NewConsumer(ctx, consConf)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	msg1 := sendMessageAsync(t, prod, "hello world 1")
 	msg2 := sendMessageAsync(t, prod, "hello world 2")
@@ -169,10 +169,10 @@ func TestProducerBatchTimeout(t *testing.T) {
 
 	// start consumer before producer to make for better test timing
 	consumer, err := client.NewConsumer(ctx, consConf)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	prod, err := client.NewProducer(ctx, prodConf)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	msg1 := sendMessageAsync(t, prod, "hello world 1")
 	msg2 := sendMessageAsync(t, prod, "hello world 2")
