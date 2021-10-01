@@ -13,6 +13,7 @@ import (
 )
 
 func newTestProducer(t *testing.T, client *Client, topic string) (*Producer, string) {
+	t.Helper()
 	if topic == "" {
 		topic = randomTopicName()
 	}
@@ -30,6 +31,7 @@ func newTestProducer(t *testing.T, client *Client, topic string) (*Producer, str
 }
 
 func sendMessage(t *testing.T, producer *Producer, s string) *Message {
+	t.Helper()
 	m := &Message{
 		Body: []byte(s),
 	}
@@ -46,6 +48,7 @@ func sendMessage(t *testing.T, producer *Producer, s string) *Message {
 }
 
 func sendMessageAsync(t *testing.T, producer *Producer, s string) *Message {
+	t.Helper()
 	m := &Message{
 		Body: []byte(s),
 	}

@@ -208,7 +208,7 @@ func (c *Client) topicLookup(topic string, topicReady requestCallback) {
 
 		partitions := resp.PartitionMetadataResponse.GetPartitions()
 		if partitions != 0 {
-			return fmt.Errorf("partitioned topics not supported") // TODO support
+			return fmt.Errorf("partitioned topics are not supported") // TODO support
 		}
 
 		return nil

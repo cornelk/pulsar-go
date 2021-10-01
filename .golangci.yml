@@ -1,27 +1,57 @@
 run:
   deadline: 5m
-
   build-tags:
     - integration
 
 linters:
-  enable-all: true
-  disable:
-    - gochecknoglobals
-    - interfacer
-    - wsl
-    - godox
-    - testpackage
-    - gomnd
-    - lll
-    - golint
-    - funlen
-    - nestif
-    - nlreturn
-    - exhaustive
-    - exhaustivestruct
-    - errorlint
-    - wrapcheck
+  enable:
+    - asciicheck
+    - bodyclose
+    # - cyclop TODO calculated cyclomatic complexity
+    - deadcode
+    - dupl
+    - durationcheck
+    - errcheck
+    - errname
+    - exportloopref
+    - forcetypeassert
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - godot
+    - goerr113
+    #- gofmt TODO
+    #- goimports TODO
+    - goprintffuncname
+    - gosec
+    - gosimple
+    - govet
+    - ifshort
+    - ineffassign
+    - makezero
+    - maligned
+    - misspell
+    - nakedret
+    - nilerr
+    - noctx
+    - nolintlint
+    - prealloc
+    - predeclared
+    - revive
+    - scopelint
+    - staticcheck
+    - structcheck
+    - stylecheck
+    - tagliatelle
+    - thelper
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - varcheck
+    - wastedassign
+    - whitespace
 
 issues:
   exclude-rules:
@@ -31,7 +61,11 @@ issues:
 
     - linters:
         - stylecheck
-      text: "ST1003:"
+      text: "ST1003: should not use underscores in package names"
+
+    - linters:
+        - revive
+      text: "var-naming: don't use an underscore in package name"
 
   exclude:
     - Using the variable on range scope .* in function literal

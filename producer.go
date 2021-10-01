@@ -369,7 +369,7 @@ func (p *Producer) processSendResult(sequenceID uint64, id *pb.MessageIdData, er
 	}
 
 	if id != nil && id.Partition == nil {
-		// set partition to -1 on unpartitioned topics for the id having the
+		// set partition to -1 on not partitioned topics for the id having the
 		// same content as when returned from a subscription.
 		id.Partition = proto.Int32(-1)
 	}
