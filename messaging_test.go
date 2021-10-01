@@ -14,6 +14,7 @@ import (
 )
 
 func setup(t *testing.T) *Client {
+	t.Helper()
 	client, err := NewClient("pulsar://localhost:6650", WithLogger(newTestLogger(t)))
 	require.Nil(t, err)
 
@@ -24,6 +25,7 @@ func setup(t *testing.T) *Client {
 }
 
 func readMessageAndCompare(t *testing.T, consumer Consumer, expected *Message) *Message {
+	t.Helper()
 	ctx := context.Background()
 	m, err := consumer.ReadMessage(ctx)
 	require.Nil(t, err)
@@ -353,16 +355,16 @@ func TestGetLastMessageID(t *testing.T) {
 	consumer, err := client.NewConsumer(ctx, consConf)
 	require.Nil(t, err)
 
-	msgid, err := consumer.LastMessageID()
+	messageID, err := consumer.LastMessageID()
 	require.Nil(t, err)
-	require.NotNil(t, msgid)
-	assert.True(t, *msgid.EntryId == math.MaxUint64)
+	require.NotNil(t, messageID)
+	assert.True(t, *messageID.EntryId == math.MaxUint64)
 
 	sendMessage(t, producer, "hello world")
-	msgid, err = consumer.LastMessageID()
+	messageID, err = consumer.LastMessageID()
 	require.Nil(t, err)
-	require.NotNil(t, msgid)
-	assert.EqualValues(t, 0, *msgid.EntryId)
+	require.NotNil(t, messageID)
+	assert.EqualValues(t, 0, *messageID.EntryId)
 }
 
 func TestConsumer_ReceiverQueueSize(t *testing.T) {

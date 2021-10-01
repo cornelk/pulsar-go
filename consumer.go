@@ -20,8 +20,6 @@ type SubscriptionType pb.CommandSubscribe_SubType
 const (
 	ExclusiveSubscription = SubscriptionType(pb.CommandSubscribe_Exclusive)
 	SharedSubscription    = SubscriptionType(pb.CommandSubscribe_Shared)
-	FailoverSubscription  = SubscriptionType(pb.CommandSubscribe_Failover)
-	KeySharedSubscription = SubscriptionType(pb.CommandSubscribe_Key_Shared)
 )
 
 // InitialPosition ...
@@ -29,10 +27,11 @@ type InitialPosition pb.CommandSubscribe_InitialPosition
 
 // Subscription initial position options.
 const (
-	// Start reading from the end topic, only getting messages published after the
-	// reader was created.
+	// LatestPosition starts reading from the topic end, only getting
+	// messages published after the reader was created.
 	LatestPosition = InitialPosition(pb.CommandSubscribe_Latest)
-	// Start reading from the earliest message available in the topic.
+	// EarliestPosition starts reading from the earliest message
+	// available in the topic.
 	EarliestPosition = InitialPosition(pb.CommandSubscribe_Earliest)
 )
 

@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	// maxFrameSize is the maximum size that Pulsar allows for messages
+	// maxFrameSize is the maximum size that Pulsar allows for messages.
 	maxFrameSize        = 5 * 1024 * 1024
 	magicCrc32c  uint16 = 0x0e01
 )
@@ -61,7 +61,7 @@ func newConn(log Logger, con net.Conn) *conn {
 	}
 }
 
-// close closes the connection.
+// close the connection.
 // Any blocked Read or Write operations will be unblocked and return errors.
 func (c *conn) close() error {
 	return c.conn.Close()
@@ -150,7 +150,7 @@ func (c *conn) readCommand() (*command, error) {
 	return cmd, nil
 }
 
-// readMessageMetaData reads the message meta data with the given payload
+// readMessageMetaData reads the message metadata with the given payload
 // size that has been returned from command header.
 func (c *conn) readMessageMetaData(payloadSize uint32) (msgMeta *pb.MessageMetadata, payload []byte, err error) {
 	if payloadSize < 10 || payloadSize > maxFrameSize {
@@ -212,10 +212,10 @@ func (c *conn) readBatchedMessage(b []byte) (meta *pb.SingleMessageMetadata, msg
 // It will execute all optional callback handlers.
 // The function returns after the server responded to the command.
 func (c *conn) SendCallbackCommand(req *requests, reqID uint64, cmd proto.Message, callbacks ...requestCallback) error {
-	// The servers response will be processed asynchronously by the client.
+	// The server response will be processed asynchronously by the client.
 	// In order to block this function until we have received the response and
-	// executed all callbacks, we use a channel. The channels capacity is 1 so
-	// we never block the response handling for other messages.
+	// executed all callbacks, we use a channel. The channel capacity is 1,
+	// so we never block the response handling for other messages.
 	callbackErr := make(chan error, 1)
 	req.addCallback(reqID, func(resp *command) (err error) {
 		defer func() { callbackErr <- err }()

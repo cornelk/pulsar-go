@@ -10,7 +10,7 @@ import (
 const (
 	publicTenant     = "public"
 	DefaultNamespace = "default"
-	// TODO support partitioning partitionedTopicSuffix = "-partition-"
+	// TODO support partitioning partitionedTopicSuffix = "-partition-".
 	persistentDomain    = "persistent"
 	nonPersistentDomain = "non-persistent"
 	domainSeparator     = "://"

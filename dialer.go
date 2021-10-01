@@ -24,6 +24,6 @@ func (d *dialer) connect(ctx context.Context) (*conn, error) {
 		return nil, err
 	}
 
-	conn := newConn(d.log, netConn)
-	return conn, nil
+	c := newConn(d.log, netConn)
+	return c, nil
 }
