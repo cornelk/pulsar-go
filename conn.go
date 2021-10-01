@@ -21,17 +21,20 @@ const (
 	magicCrc32c  uint16 = 0x0e01
 )
 
+var (
+	crcOnce  sync.Once // guards init of crcTable via newConn
+	crcTable *crc32.Table
+)
+
 // conn represents a connection to a Pulsar broker.
 // The functions are not safe for concurrent use.
 type conn struct {
-	log  Logger
-	conn net.Conn
+	log Logger
 
-	rb             bufio.Reader
-	wb             bufio.Writer
-	connWriteMutex sync.Mutex // protects conn writing
-
-	crcTable *crc32.Table
+	closer     io.Closer
+	reader     bufio.Reader
+	writer     bufio.Writer
+	writeMutex sync.Mutex // protects writer writing
 }
 
 type clientConn interface {
@@ -51,20 +54,22 @@ type brokerConnection struct {
 var ErrNetClosing = errors.New("use of closed network connection")
 
 // newConn returns a new Pulsar broker connection.
-func newConn(log Logger, con net.Conn) *conn {
+func newConn(log Logger, con io.ReadWriteCloser) *conn {
+	crcOnce.Do(func() {
+		crcTable = crc32.MakeTable(crc32.Castagnoli)
+	})
 	return &conn{
-		log:      log,
-		conn:     con,
-		rb:       *bufio.NewReader(con),
-		wb:       *bufio.NewWriter(con),
-		crcTable: crc32.MakeTable(crc32.Castagnoli),
+		log:    log,
+		closer: con,
+		reader: *bufio.NewReader(con),
+		writer: *bufio.NewWriter(con),
 	}
 }
 
 // close the connection.
 // Any blocked Read or Write operations will be unblocked and return errors.
 func (c *conn) close() error {
-	return c.conn.Close()
+	return c.closer.Close()
 }
 
 // WriteCommand sends a command to the Pulsar broker.
@@ -78,35 +83,35 @@ func (c *conn) WriteCommand(cmd proto.Message, payload []byte) error {
 
 	cmdSize := uint32(len(serialized))
 
-	c.connWriteMutex.Lock()
-	defer c.connWriteMutex.Unlock()
+	c.writeMutex.Lock()
+	defer c.writeMutex.Unlock()
 
 	b := make([]byte, 4)
 	// write size of the frame, counting everything that comes after it
 	binary.BigEndian.PutUint32(b, cmdSize+4+uint32(len(payload)))
-	if _, err := c.wb.Write(b); err != nil {
+	if _, err = c.writer.Write(b); err != nil {
 		return fmt.Errorf("writing frame size failed: %w", err)
 	}
 
 	// write size of the protobuf-serialized command
 	binary.BigEndian.PutUint32(b, cmdSize)
-	if _, err := c.wb.Write(b); err != nil {
+	if _, err = c.writer.Write(b); err != nil {
 		return fmt.Errorf("writing command size failed: %w", err)
 	}
 
 	// write the protobuf-serialized command
-	if _, err := c.wb.Write(serialized); err != nil {
+	if _, err = c.writer.Write(serialized); err != nil {
 		return fmt.Errorf("writing marshalled command failed: %w", err)
 	}
 
 	if len(payload) > 0 {
 		// write the payload
-		if _, err := c.wb.Write(payload); err != nil {
+		if _, err = c.writer.Write(payload); err != nil {
 			return fmt.Errorf("writing command payload failed: %w", err)
 		}
 	}
 
-	if err := c.wb.Flush(); err != nil {
+	if err = c.writer.Flush(); err != nil {
 		return fmt.Errorf("flushing connection failed: %w", err)
 	}
 	return nil
@@ -116,7 +121,7 @@ func (c *conn) WriteCommand(cmd proto.Message, payload []byte) error {
 // be read after the command.
 func (c *conn) readCommand() (*command, error) {
 	b := make([]byte, 4+4)
-	_, err := io.ReadFull(&c.rb, b)
+	_, err := io.ReadFull(&c.reader, b)
 	if err != nil {
 		if e, ok := err.(*net.OpError); ok && e.Err.Error() == ErrNetClosing.Error() {
 			return nil, ErrNetClosing
@@ -136,7 +141,7 @@ func (c *conn) readCommand() (*command, error) {
 
 	// read commandSize bytes of message
 	data := make([]byte, cmdSize)
-	_, err = io.ReadFull(&c.rb, data)
+	_, err = io.ReadFull(&c.reader, data)
 	if err != nil {
 		return nil, fmt.Errorf("reading body failed: %w", err)
 	}
@@ -158,7 +163,7 @@ func (c *conn) readMessageMetaData(payloadSize uint32) (msgMeta *pb.MessageMetad
 	}
 
 	b := make([]byte, payloadSize)
-	_, err = io.ReadFull(&c.rb, b)
+	_, err = io.ReadFull(&c.reader, b)
 	if err != nil {
 		return nil, nil, fmt.Errorf("reading data failed: %w", err)
 	}
@@ -171,7 +176,7 @@ func (c *conn) readMessageMetaData(payloadSize uint32) (msgMeta *pb.MessageMetad
 
 	// CRC32-C checksum of size and payload
 	checksum := binary.BigEndian.Uint32(b[2:6])
-	computedChecksum := crc32.Checksum(b[2+4:], c.crcTable)
+	computedChecksum := crc32.Checksum(b[2+4:], crcTable)
 	if checksum != computedChecksum {
 		return nil, nil, errors.New("checksum mismatch")
 	}
@@ -221,8 +226,7 @@ func (c *conn) SendCallbackCommand(req *requests, reqID uint64, cmd proto.Messag
 		defer func() { callbackErr <- err }()
 
 		for _, callback := range callbacks {
-			err := callback(resp)
-			if err != nil {
+			if err := callback(resp); err != nil {
 				return err
 			}
 		}
@@ -230,8 +234,7 @@ func (c *conn) SendCallbackCommand(req *requests, reqID uint64, cmd proto.Messag
 		return resp.err
 	})
 
-	err := c.WriteCommand(cmd, nil)
-	if err != nil {
+	if err := c.WriteCommand(cmd, nil); err != nil {
 		return err
 	}
 

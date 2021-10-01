@@ -30,7 +30,6 @@ linters:
     - ifshort
     - ineffassign
     - makezero
-    - maligned
     - misspell
     - nakedret
     - nilerr
@@ -39,7 +38,6 @@ linters:
     - prealloc
     - predeclared
     - revive
-    - scopelint
     - staticcheck
     - structcheck
     - stylecheck
