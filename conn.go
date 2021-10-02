@@ -12,7 +12,7 @@ import (
 	"sync"
 
 	pb "github.com/cornelk/pulsar-go/proto"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
