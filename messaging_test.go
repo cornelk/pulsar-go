@@ -5,6 +5,7 @@ package pulsar
 import (
 	"context"
 	"math"
+	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -18,7 +19,18 @@ func setup(t *testing.T) *Client {
 	client, err := NewClient("pulsar://localhost:6650", WithLogger(newTestLogger(t)))
 	require.NoError(t, err)
 
+	// make sure that the namespace exists to avoid the error from pulsar:
+	// "Policies not found for public/default namespace".
 	ctx := context.Background()
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut,
+		"http://localhost:8080/admin/v2/namespaces/public/default3", nil)
+	require.NoError(t, err)
+	h := &http.Client{}
+	resp, err := h.Do(req)
+	require.NoError(t, err)
+	err = resp.Body.Close()
+	assert.NoError(t, err)
+
 	err = client.Dial(ctx)
 	require.NoError(t, err)
 	return client
