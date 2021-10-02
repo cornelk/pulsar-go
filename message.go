@@ -6,7 +6,7 @@ import (
 	"hash/crc32"
 
 	pb "github.com/cornelk/pulsar-go/proto"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 // Message is a data structure representing Pulsar messages.

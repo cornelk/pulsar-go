@@ -11,7 +11,7 @@ import (
 	"time"
 
 	pb "github.com/cornelk/pulsar-go/proto"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 // ProducerConfig is a configuration object used to create new instances
