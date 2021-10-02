@@ -23,7 +23,7 @@ func setup(t *testing.T) *Client {
 	// "Policies not found for public/default namespace".
 	ctx := context.Background()
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut,
-		"http://localhost:8080/admin/v2/namespaces/public/default3", nil)
+		"http://localhost:8080/admin/v2/namespaces/public/default", nil)
 	require.NoError(t, err)
 	h := &http.Client{}
 	resp, err := h.Do(req)
