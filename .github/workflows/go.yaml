@@ -23,6 +23,7 @@ jobs:
         image: codejuggle/pulsar-docker-standalone:2.6.2
         ports:
           - 6650:6650
+          - 8080:8080
 
     steps:
       - name: Set up Go 1.x
