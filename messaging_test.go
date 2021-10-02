@@ -5,6 +5,7 @@ package pulsar
 import (
 	"context"
 	"math"
+	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -16,11 +17,22 @@ import (
 func setup(t *testing.T) *Client {
 	t.Helper()
 	client, err := NewClient("pulsar://localhost:6650", WithLogger(newTestLogger(t)))
-	require.Nil(t, err)
+	require.NoError(t, err)
 
+	// make sure that the namespace exists to avoid the error from pulsar:
+	// "Policies not found for public/default namespace".
 	ctx := context.Background()
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut,
+		"http://localhost:8080/admin/v2/namespaces/public/default", nil)
+	require.NoError(t, err)
+	h := &http.Client{}
+	resp, err := h.Do(req)
+	require.NoError(t, err)
+	err = resp.Body.Close()
+	assert.NoError(t, err)
+
 	err = client.Dial(ctx)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	return client
 }
 
@@ -28,7 +40,7 @@ func readMessageAndCompare(t *testing.T, consumer Consumer, expected *Message) *
 	t.Helper()
 	ctx := context.Background()
 	m, err := consumer.ReadMessage(ctx)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, m)
 	assert.Equal(t, expected.Body, m.Body)
 
@@ -61,21 +73,21 @@ func TestSendReceiveEarliestPosition(t *testing.T) {
 
 	ctx := context.Background()
 	consumer, err := client.NewConsumer(ctx, consConf)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	m := readMessageAndCompare(t, consumer, msg1)
 	topicDetail, err := NewTopic(m.Topic)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, topic, topicDetail.LocalName)
 
 	err = consumer.AckMessage(m)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// restart consumer
 	err = consumer.Close()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	consumer, err = client.NewConsumer(ctx, consConf)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	readMessageAndCompare(t, consumer, msg2)
 }
@@ -99,7 +111,7 @@ func TestSendReceiveLatestPositionExclusive(t *testing.T) {
 
 	ctx := context.Background()
 	consumer, err := client.NewConsumer(ctx, consConf)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	msg2 := sendMessage(t, producer, "hello world 2")
 
@@ -129,7 +141,7 @@ func TestSendReceiveLatestPositionInclusive(t *testing.T) {
 
 	ctx := context.Background()
 	consumer, err := client.NewConsumer(ctx, consConf)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// wait for message to be available
 	timeout := time.After(1 * time.Second)
@@ -155,7 +167,7 @@ func TestEmptyTopicLatestPositionInclusive(t *testing.T) {
 
 	ctx := context.Background()
 	consumer, err := client.NewConsumer(ctx, consConf)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// wait for message to be available
 	timeout := time.After(1 * time.Second)
@@ -195,7 +207,7 @@ func TestNothingToReceive(t *testing.T) {
 
 	ctx := context.Background()
 	consumer, err := client.NewConsumer(ctx, consConf)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	timeout := time.After(1 * time.Second)
 	done := make(chan error)
@@ -235,14 +247,14 @@ func TestSeek(t *testing.T) {
 
 	ctx := context.Background()
 	consumer, err := client.NewConsumer(ctx, consConf)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	readMessageAndCompare(t, consumer, msg1)
 
 	readMessageAndCompare(t, consumer, msg2)
 
 	err = consumer.SeekMessage(msg1)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	readMessageAndCompare(t, consumer, msg1)
 }
@@ -268,13 +280,13 @@ func TestConsumerTopicPattern(t *testing.T) {
 
 	ctx := context.Background()
 	consumer, err := client.NewConsumer(ctx, consConf)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	m1, err := consumer.ReadMessage(ctx)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, m1)
 	m2, err := consumer.ReadMessage(ctx)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, m2)
 
 	assert.Nil(t, consumer.AckMessage(m1))
@@ -295,11 +307,11 @@ func TestConsumerTopicPattern(t *testing.T) {
 	assert.Equal(t, topic2Msg.Body, msg2.Body)
 
 	t1, err := NewTopic(topic1Msg.Topic)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, topic+"-1", t1.LocalName)
 
 	t2, err := NewTopic(topic2Msg.Topic)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, t2)
 	assert.Equal(t, topic+"-2", t2.LocalName)
 }
@@ -320,7 +332,7 @@ func TestConsumerTopicPatternDiscovery(t *testing.T) {
 
 	ctx := context.Background()
 	consumer, err := client.NewConsumer(ctx, consConf)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	time.Sleep(time.Second)
 
@@ -328,7 +340,7 @@ func TestConsumerTopicPatternDiscovery(t *testing.T) {
 	msg := sendMessage(t, producer, "hello world")
 
 	m, err := consumer.ReadMessage(ctx)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, m)
 
 	assert.Nil(t, consumer.AckMessage(m))
@@ -353,16 +365,16 @@ func TestGetLastMessageID(t *testing.T) {
 
 	ctx := context.Background()
 	consumer, err := client.NewConsumer(ctx, consConf)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	messageID, err := consumer.LastMessageID()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, messageID)
 	assert.True(t, *messageID.EntryId == math.MaxUint64)
 
 	sendMessage(t, producer, "hello world")
 	messageID, err = consumer.LastMessageID()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, messageID)
 	assert.EqualValues(t, 0, *messageID.EntryId)
 }
@@ -395,7 +407,7 @@ func TestConsumer_ReceiverQueueSize(t *testing.T) {
 
 	ctx := context.Background()
 	consumer, err := client.NewConsumer(ctx, consConf)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Read and ack the available messages for this consumer.
 	for i := 0; i < messageCount; i++ {

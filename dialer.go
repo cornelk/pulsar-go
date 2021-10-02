@@ -5,25 +5,15 @@ import (
 	"net"
 )
 
-type dialer struct {
-	log  Logger
-	host string
-}
+type dialer func(ctx context.Context, log Logger, host string) (*conn, error)
 
-func newDialer(log Logger, host string) *dialer {
-	return &dialer{
-		log:  log,
-		host: host,
-	}
-}
-
-func (d *dialer) connect(ctx context.Context) (*conn, error) {
+func defaultDialer(ctx context.Context, log Logger, host string) (*conn, error) {
 	dial := net.Dialer{}
-	netConn, err := dial.DialContext(ctx, "tcp", d.host)
+	netConn, err := dial.DialContext(ctx, "tcp", host)
 	if err != nil {
 		return nil, err
 	}
 
-	c := newConn(d.log, netConn)
+	c := newConn(log, netConn)
 	return c, nil
 }

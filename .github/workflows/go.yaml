@@ -23,6 +23,7 @@ jobs:
         image: codejuggle/pulsar-docker-standalone:2.6.2
         ports:
           - 6650:6650
+          - 8080:8080
 
     steps:
       - name: Set up Go 1.x
@@ -40,11 +41,12 @@ jobs:
       - name: Build
         run: go build -v .
 
-      - name: Test
-        run: go test -tags integration -race . -v
-
       - name: Install linter
         run: "curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.42.0"
 
       - name: Run linter
         run: golangci-lint run
+
+      # sleep to make sure that pulsar container is ready
+      - name: Test
+        run: sleep 10 && go test -tags integration -race . -v

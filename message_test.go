@@ -16,11 +16,11 @@ func TestMessageIDMarshal(t *testing.T) {
 	}
 
 	b, err := m1.Marshal()
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	var m2 MessageID
 	err = m2.Unmarshal(b)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, *m1.LedgerId, *m2.LedgerId)
 	assert.Equal(t, *m1.EntryId, *m2.EntryId)

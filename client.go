@@ -24,9 +24,10 @@ const (
 
 // Client implements a Pulsar client.
 type Client struct {
-	log  Logger
-	host string
-	cmds commands
+	log    Logger
+	host   string
+	cmds   commands
+	dialer dialer
 
 	cancel context.CancelFunc
 	ctx    context.Context // passed to consumers/producers
@@ -63,8 +64,9 @@ func NewClient(serverURL string, opts ...ClientOption) (*Client, error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	c := &Client{
-		log:  conf.Logger,
-		host: u.Host,
+		log:    conf.Logger,
+		host:   u.Host,
+		dialer: conf.dialer,
 
 		cancel: cancel,
 		ctx:    ctx,
@@ -89,8 +91,7 @@ func NewClient(serverURL string, opts ...ClientOption) (*Client, error) {
 // Dial connects to the Pulsar server.
 // This needs to be called before a Consumer or Producer can be created.
 func (c *Client) Dial(ctx context.Context) error {
-	d := newDialer(c.log, c.host)
-	conn, err := d.connect(ctx)
+	conn, err := c.dialer(ctx, c.log, c.host)
 	if err != nil {
 		c.log.Printf("Dialing failed: %w", err)
 		return err
@@ -184,7 +185,7 @@ func (c *Client) NewConsumer(ctx context.Context, config ConsumerConfig) (Consum
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
-	case err := <-cons.connected:
+	case err = <-cons.connected:
 		return cons, err
 	}
 }
@@ -214,8 +215,7 @@ func (c *Client) topicLookup(topic string, topicReady requestCallback) {
 		return nil
 	}
 
-	err := c.conn.SendCallbackCommand(c.req, reqID, cmd, respHandler)
-	if err != nil {
+	if err := c.conn.SendCallbackCommand(c.req, reqID, cmd, respHandler); err != nil {
 		c.log.Printf("Getting partitioned meta data failed: %w", err)
 		return
 	}
@@ -454,8 +454,7 @@ func (c *Client) Topics(namespace string) ([]*Topic, error) {
 		return nil
 	}
 
-	err := c.conn.SendCallbackCommand(c.req, reqID, cmd, respHandler)
-	if err != nil {
+	if err := c.conn.SendCallbackCommand(c.req, reqID, cmd, respHandler); err != nil {
 		return nil, err
 	}
 

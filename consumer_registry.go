@@ -25,42 +25,39 @@ func (r *consumerRegistry) newID() uint64 {
 
 func (r *consumerRegistry) add(id uint64, consumer *consumer) {
 	r.mu.Lock()
-	defer r.mu.Unlock()
-
 	r.consumers[id] = consumer
+	r.mu.Unlock()
 }
 
 func (r *consumerRegistry) delete(id uint64) {
 	r.mu.Lock()
-	defer r.mu.Unlock()
-
 	delete(r.consumers, id)
+	r.mu.Unlock()
 }
 
 func (r *consumerRegistry) get(id uint64) (consumer *consumer, ok bool) {
 	r.mu.RLock()
-	defer r.mu.RUnlock()
-
 	consumer, ok = r.consumers[id]
+	r.mu.RUnlock()
 	return consumer, ok
 }
 
 func (r *consumerRegistry) getAndDelete(id uint64) (consumer *consumer, ok bool) {
 	r.mu.Lock()
-	defer r.mu.Unlock()
-
 	consumer, ok = r.consumers[id]
-	delete(r.consumers, id)
+	if ok {
+		delete(r.consumers, id)
+	}
+	r.mu.Unlock()
 	return consumer, ok
 }
 
 func (r *consumerRegistry) all() []*consumer {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
+	r.mu.RLock()
 	consumers := make([]*consumer, 0, len(r.consumers))
 	for _, cons := range r.consumers {
 		consumers = append(consumers, cons)
 	}
+	r.mu.RUnlock()
 	return consumers
 }

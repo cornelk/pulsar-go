@@ -6,15 +6,15 @@ import (
 )
 
 type producerRegistry struct {
-	producerIDs uint64
-	mu          sync.RWMutex
-	producers   map[uint64]*Producer
+	producerIDs  uint64
+	producersMtx sync.RWMutex
+	producers    map[uint64]*Producer
 }
 
 func newProducerRegistry() *producerRegistry {
 	return &producerRegistry{
-		mu:        sync.RWMutex{},
-		producers: map[uint64]*Producer{},
+		producersMtx: sync.RWMutex{},
+		producers:    map[uint64]*Producer{},
 	}
 }
 
@@ -24,36 +24,34 @@ func (r *producerRegistry) newID() uint64 {
 }
 
 func (r *producerRegistry) add(id uint64, producer *Producer) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
+	r.producersMtx.Lock()
 	r.producers[id] = producer
+	r.producersMtx.Unlock()
 }
 
 func (r *producerRegistry) get(id uint64) (producer *Producer, ok bool) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
+	r.producersMtx.RLock()
 	producer, ok = r.producers[id]
+	r.producersMtx.RUnlock()
 	return producer, ok
 }
 
 func (r *producerRegistry) getAndDelete(id uint64) (producer *Producer, ok bool) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
+	r.producersMtx.Lock()
 	producer, ok = r.producers[id]
-	delete(r.producers, id)
+	if ok {
+		delete(r.producers, id)
+	}
+	r.producersMtx.Unlock()
 	return producer, ok
 }
 
 func (r *producerRegistry) all() []*Producer {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
+	r.producersMtx.RLock()
 	producers := make([]*Producer, 0, len(r.producers))
 	for _, prod := range r.producers {
 		producers = append(producers, prod)
 	}
+	defer r.producersMtx.RUnlock()
 	return producers
 }
