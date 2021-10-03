@@ -18,7 +18,7 @@ func newTestLogger(tb testing.TB) Logger {
 	tb.Helper()
 	return testLogger{
 		logger: log.New(ioutil.Discard, "[Pulsar] ", log.LstdFlags),
-		TB: tb,
+		TB:     tb,
 	}
 }
 

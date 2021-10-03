@@ -13,6 +13,7 @@ import (
 	"time"
 
 	pb "github.com/cornelk/pulsar-go/proto"
+	"go.uber.org/atomic"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -29,8 +30,9 @@ type Client struct {
 	cmds   commands
 	dialer dialer
 
-	cancel context.CancelFunc
-	ctx    context.Context // passed to consumers/producers
+	cancel  context.CancelFunc
+	ctx     context.Context // passed to consumers/producers
+	closing atomic.Bool
 
 	conn      *conn
 	connMutex sync.RWMutex // protects conn init/close access
@@ -118,6 +120,10 @@ func (c *Client) Dial(ctx context.Context) error {
 // NewProducer creates a new Producer, returning after the connection
 // has been made.
 func (c *Client) NewProducer(ctx context.Context, config ProducerConfig) (*Producer, error) {
+	if c.closing.Load() {
+		return nil, ErrClientClosing
+	}
+
 	// TODO check connected state
 
 	b := c.newBrokerConnection()
@@ -157,6 +163,9 @@ func (c *Client) createNewConsumer(config ConsumerConfig) (*consumer, error) {
 func (c *Client) NewConsumer(ctx context.Context, config ConsumerConfig) (Consumer, error) {
 	if err := config.Validate(); err != nil {
 		return nil, fmt.Errorf("validating config: %w", err)
+	}
+	if c.closing.Load() {
+		return nil, ErrClientClosing
 	}
 
 	// TODO check connected state
@@ -360,6 +369,10 @@ func (c *Client) CloseProducer(producerID uint64) error {
 
 // Close closes all consumers, producers and the client connection.
 func (c *Client) Close() error {
+	if !c.closing.CAS(false, true) {
+		return nil
+	}
+
 	c.cancel()
 
 	c.connMutex.Lock()
@@ -368,8 +381,6 @@ func (c *Client) Close() error {
 		return nil
 	}
 	c.connMutex.Unlock()
-
-	// TODO: ensure no new consumers or producers are created during shutdown
 
 	for _, cons := range c.consumers.all() {
 		_ = c.CloseConsumer(cons.consumerID)
