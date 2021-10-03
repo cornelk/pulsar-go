@@ -25,6 +25,8 @@ const (
 // InitialPosition ...
 type InitialPosition pb.CommandSubscribe_InitialPosition
 
+type InitialPositionCallback func(topic string) (position InitialPosition, StartMessageID []byte, err error)
+
 // Subscription initial position options.
 const (
 	// LatestPosition starts reading from the topic end, only getting
@@ -64,6 +66,11 @@ type ConsumerConfig struct {
 	// Signal whether the subscription will initialize on latest
 	// or earliest position.
 	InitialPosition InitialPosition
+
+	// Callback function for every discovered topic when using a topic
+	// pattern to allow the client to specify an initial position and
+	// start message ID for the topic.
+	InitialPositionCallback InitialPositionCallback
 
 	// If specified, the subscription will position the cursor
 	// on the particular message id and will send messages from

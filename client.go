@@ -280,22 +280,13 @@ func (c *Client) nameSpaceTopicLookup(multi *multiTopicConsumer, config Consumer
 
 		// TODO handle deleted topics
 
-		err = c.conn.SendCallbackCommand(c.req, reqID, cmd, respHandler)
-		if err != nil {
+		if err = c.conn.SendCallbackCommand(c.req, reqID, cmd, respHandler); err != nil {
 			c.log.Printf("Getting topics of namespace failed: %w", err)
 			return
 		}
 
-		for _, topic := range newTopics {
-			config.Topic = topic
-			cons, err := c.createNewConsumer(config)
-			if err != nil {
-				c.log.Printf("Creating consumer failed: %w", err)
-				return
-			}
-			cons.multi = multi
-			multi.addConsumer(cons.consumerID, cons)
-			c.topicLookup(cons.topic, cons.topicLookupFinished)
+		if err = c.subscribeToTopics(multi, config, newTopics); err != nil {
+			return
 		}
 
 		select {
@@ -304,6 +295,30 @@ func (c *Client) nameSpaceTopicLookup(multi *multiTopicConsumer, config Consumer
 			return
 		}
 	}
+}
+
+func (c *Client) subscribeToTopics(multi *multiTopicConsumer, config ConsumerConfig, topics []string) error {
+	var err error
+	for _, topic := range topics {
+		if config.InitialPositionCallback != nil {
+			config.InitialPosition, config.StartMessageID, err = config.InitialPositionCallback(topic)
+			if err != nil {
+				c.log.Printf("Initial position callback failed: %w", err)
+				continue
+			}
+		}
+
+		config.Topic = topic
+		cons, err := c.createNewConsumer(config)
+		if err != nil {
+			c.log.Printf("Creating consumer failed: %w", err)
+			return err
+		}
+		cons.multi = multi
+		multi.addConsumer(cons.consumerID, cons)
+		c.topicLookup(cons.topic, cons.topicLookupFinished)
+	}
+	return nil
 }
 
 // CloseConsumer closes a specific consumer.
