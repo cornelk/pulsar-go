@@ -7,9 +7,24 @@ import (
 
 // Logger ...
 type Logger interface {
-	Printf(format string, v ...interface{})
+	Debugf(format string, args ...interface{})
+	Errorf(format string, args ...interface{})
+}
+
+type logger struct {
+	logger *log.Logger
 }
 
 func newLogger() Logger {
-	return log.New(ioutil.Discard, "[Pulsar] ", log.LstdFlags)
+	return logger{
+		logger: log.New(ioutil.Discard, "[Pulsar] ", log.LstdFlags),
+	}
+}
+
+func (l logger) Debugf(format string, args ...interface{}) {
+	l.logger.Printf(format, args...)
+}
+
+func (l logger) Errorf(format string, args ...interface{}) {
+	l.logger.Printf(format, args...)
 }

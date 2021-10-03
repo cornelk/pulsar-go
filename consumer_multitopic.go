@@ -5,10 +5,17 @@ import (
 	"errors"
 	"io"
 	"regexp"
+
+	"go.uber.org/atomic"
 )
 
+// ErrConsumerOfMessageNotFound is returned when the consumer for a received
+// message is not found.
+var ErrConsumerOfMessageNotFound = errors.New("consumer of message not found")
+
 type multiTopicConsumer struct {
-	ctx context.Context
+	ctx     context.Context
+	closing atomic.Bool
 
 	topicPattern     *regexp.Regexp
 	incomingMessages chan *Message
@@ -48,6 +55,10 @@ func (c *multiTopicConsumer) changeConsumerID(consumer *consumer, oldID, newID u
 }
 
 func (c *multiTopicConsumer) Close() error {
+	if !c.closing.CAS(false, true) {
+		return nil
+	}
+
 	c.consumers.mu.RLock()
 	defer c.consumers.mu.RLock()
 
@@ -81,7 +92,10 @@ func (c *multiTopicConsumer) SeekMessage(_ *Message) error {
 func (c *multiTopicConsumer) AckMessage(msg *Message) error {
 	consumer, ok := c.consumers.get(msg.consumerID)
 	if !ok {
-		return errors.New("consumer of message not found")
+		if c.closing.Load() {
+			return nil
+		}
+		return ErrConsumerOfMessageNotFound
 	}
 
 	return consumer.AckMessage(msg)

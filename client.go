@@ -13,6 +13,7 @@ import (
 	"time"
 
 	pb "github.com/cornelk/pulsar-go/proto"
+	"go.uber.org/atomic"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -29,8 +30,9 @@ type Client struct {
 	cmds   commands
 	dialer dialer
 
-	cancel context.CancelFunc
-	ctx    context.Context // passed to consumers/producers
+	cancel  context.CancelFunc
+	ctx     context.Context // passed to consumers/producers
+	closing atomic.Bool
 
 	conn      *conn
 	connMutex sync.RWMutex // protects conn init/close access
@@ -93,7 +95,7 @@ func NewClient(serverURL string, opts ...ClientOption) (*Client, error) {
 func (c *Client) Dial(ctx context.Context) error {
 	conn, err := c.dialer(ctx, c.log, c.host)
 	if err != nil {
-		c.log.Printf("Dialing failed: %w", err)
+		c.log.Errorf("Dialing failed: %s", err.Error())
 		return err
 	}
 
@@ -118,6 +120,10 @@ func (c *Client) Dial(ctx context.Context) error {
 // NewProducer creates a new Producer, returning after the connection
 // has been made.
 func (c *Client) NewProducer(ctx context.Context, config ProducerConfig) (*Producer, error) {
+	if c.closing.Load() {
+		return nil, ErrClientClosing
+	}
+
 	// TODO check connected state
 
 	b := c.newBrokerConnection()
@@ -157,6 +163,9 @@ func (c *Client) createNewConsumer(config ConsumerConfig) (*consumer, error) {
 func (c *Client) NewConsumer(ctx context.Context, config ConsumerConfig) (Consumer, error) {
 	if err := config.Validate(); err != nil {
 		return nil, fmt.Errorf("validating config: %w", err)
+	}
+	if c.closing.Load() {
+		return nil, ErrClientClosing
 	}
 
 	// TODO check connected state
@@ -216,14 +225,14 @@ func (c *Client) topicLookup(topic string, topicReady requestCallback) {
 	}
 
 	if err := c.conn.SendCallbackCommand(c.req, reqID, cmd, respHandler); err != nil {
-		c.log.Printf("Getting partitioned meta data failed: %w", err)
+		c.log.Errorf("Getting partitioned meta data failed: %s", err.Error())
 		return
 	}
 
 	reqID = c.req.newID()
 	c.req.addCallbackCustom(reqID, topicReady, topic)
 	if err := c.sendLookupTopicCommand(topic, reqID); err != nil {
-		c.log.Printf("Sending lookup topic command failed: %w", err)
+		c.log.Errorf("Sending lookup topic command failed: %s", err.Error())
 		return
 	}
 }
@@ -231,12 +240,12 @@ func (c *Client) topicLookup(topic string, topicReady requestCallback) {
 func (c *Client) nameSpaceTopicLookup(multi *multiTopicConsumer, config ConsumerConfig) {
 	topic, err := NewTopic(config.TopicPattern)
 	if err != nil {
-		c.log.Printf("Processing topic name failed: %w", err)
+		c.log.Errorf("Processing topic name failed: %s", err.Error())
 		return
 	}
 	pattern, err := regexp.Compile(topic.CompleteName)
 	if err != nil {
-		c.log.Printf("Compiling topic regexp pattern failed: %w", err)
+		c.log.Errorf("Compiling topic regexp pattern failed: %s", err.Error())
 		return
 	}
 
@@ -261,7 +270,7 @@ func (c *Client) nameSpaceTopicLookup(multi *multiTopicConsumer, config Consumer
 			for _, name := range resp.GetTopicsOfNamespaceResponse.Topics {
 				t, err := NewTopic(name)
 				if err != nil {
-					c.log.Printf("Processing topic name failed: %w", err)
+					c.log.Errorf("Processing topic name failed: %s", err.Error())
 					continue
 				}
 
@@ -281,7 +290,7 @@ func (c *Client) nameSpaceTopicLookup(multi *multiTopicConsumer, config Consumer
 		// TODO handle deleted topics
 
 		if err = c.conn.SendCallbackCommand(c.req, reqID, cmd, respHandler); err != nil {
-			c.log.Printf("Getting topics of namespace failed: %w", err)
+			c.log.Errorf("Getting topics of namespace failed: %s", err.Error())
 			return
 		}
 
@@ -303,7 +312,7 @@ func (c *Client) subscribeToTopics(multi *multiTopicConsumer, config ConsumerCon
 		if config.InitialPositionCallback != nil {
 			config.InitialPosition, config.StartMessageID, err = config.InitialPositionCallback(topic)
 			if err != nil {
-				c.log.Printf("Initial position callback failed: %w", err)
+				c.log.Errorf("Initial position callback failed: %s", err.Error())
 				continue
 			}
 		}
@@ -311,7 +320,7 @@ func (c *Client) subscribeToTopics(multi *multiTopicConsumer, config ConsumerCon
 		config.Topic = topic
 		cons, err := c.createNewConsumer(config)
 		if err != nil {
-			c.log.Printf("Creating consumer failed: %w", err)
+			c.log.Errorf("Creating consumer failed: %s", err.Error())
 			return err
 		}
 		cons.multi = multi
@@ -360,6 +369,10 @@ func (c *Client) CloseProducer(producerID uint64) error {
 
 // Close closes all consumers, producers and the client connection.
 func (c *Client) Close() error {
+	if !c.closing.CAS(false, true) {
+		return nil
+	}
+
 	c.cancel()
 
 	c.connMutex.Lock()
@@ -368,8 +381,6 @@ func (c *Client) Close() error {
 		return nil
 	}
 	c.connMutex.Unlock()
-
-	// TODO: ensure no new consumers or producers are created during shutdown
 
 	for _, cons := range c.consumers.all() {
 		_ = c.CloseConsumer(cons.consumerID)
@@ -408,18 +419,18 @@ func (c *Client) readCommands() {
 				return
 			}
 
-			c.log.Printf("Reading command failed: %w", err)
+			c.log.Errorf("Reading command failed: %s", err.Error())
 			return
 		}
 
 		if err = c.processReceivedCommand(cmd); err != nil {
-			c.log.Printf("Processing received command %+v failed: %w", cmd, err)
+			c.log.Errorf("Processing received command %+v failed: %s", cmd, err.Error())
 		}
 	}
 }
 
 func (c *Client) processReceivedCommand(cmd *command) error {
-	c.log.Printf("*** Received command: %+v", cmd)
+	c.log.Debugf("*** Received command: %+v", cmd)
 
 	handler, ok := c.cmds[*cmd.Type]
 	if !ok {

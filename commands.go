@@ -24,6 +24,10 @@ type (
 // noRequestID is used inside this library to signal that a command has no request ID.
 const noRequestID = 0
 
+// ErrClientClosing is returned when a new consumer or producer should be
+// created while the client is closing all connections.
+var ErrClientClosing = errors.New("client is closing connections")
+
 func (c *Client) newCommandMap() commands {
 	return commands{
 		pb.BaseCommand_CONNECTED:                        c.handleConnectedCommand,
@@ -125,7 +129,13 @@ func (c *Client) handleMessage(base *command) error {
 	consumerID := cmd.GetConsumerId()
 	cons, ok := c.consumers.get(consumerID)
 	if !ok {
-		return errors.New("consumer of message not found")
+		if c.closing.Load() {
+			return nil
+		}
+		// a message was received for a consumer that is now closed,
+		// do not thread it as an error.
+		c.log.Debugf("Consumer '%d' for message does not exist", consumerID)
+		return nil
 	}
 
 	id := cmd.MessageId

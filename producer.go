@@ -353,7 +353,7 @@ func (p *Producer) messageProducerWorker() {
 		}
 
 		if err := p.sendMessageCommand(batch); err != nil {
-			p.log.Printf("Sending message command failed: %w", err)
+			p.log.Errorf("Sending message command failed: %s", err.Error())
 		}
 		batch = batch[:0]
 	}
