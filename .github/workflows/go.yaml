@@ -49,4 +49,4 @@ jobs:
 
       # sleep to make sure that pulsar container is ready
       - name: Test
-        run: sleep 10 && go test -tags integration -race -p 1 .
+        run: sleep 20 && go test -tags integration -race -p 1 .
