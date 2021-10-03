@@ -3,22 +3,29 @@
 package pulsar
 
 import (
+	"io/ioutil"
 	"log"
 	"testing"
 )
 
-// newTestLogger returns a new logger that logs to the provided testing.T.
-func newTestLogger(tb testing.TB) *log.Logger {
-	tb.Helper()
-	return log.New(testWriter{TB: tb}, tb.Name()+" ", log.LstdFlags|log.Lshortfile)
-}
-
-type testWriter struct {
+type testLogger struct {
+	logger *log.Logger
 	testing.TB
 }
 
-func (tw testWriter) Write(p []byte) (int, error) {
-	tw.Helper()
-	tw.Logf("%s", p)
-	return len(p), nil
+// newTestLogger returns a new logger that logs to the provided testing.TB.
+func newTestLogger(tb testing.TB) Logger {
+	tb.Helper()
+	return testLogger{
+		logger: log.New(ioutil.Discard, "[Pulsar] ", log.LstdFlags),
+		TB: tb,
+	}
+}
+
+func (l testLogger) Debugf(format string, args ...interface{}) {
+	l.TB.Logf(format, args...)
+}
+
+func (l testLogger) Errorf(format string, args ...interface{}) {
+	l.TB.Errorf(format, args...)
 }

@@ -8,8 +8,6 @@ import (
 // Logger ...
 type Logger interface {
 	Debugf(format string, args ...interface{})
-	Infof(format string, args ...interface{})
-	Warnf(format string, args ...interface{})
 	Errorf(format string, args ...interface{})
 }
 
@@ -24,17 +22,9 @@ func newLogger() Logger {
 }
 
 func (l logger) Debugf(format string, args ...interface{}) {
-	l.logger.Printf(format, args)
-}
-
-func (l logger) Infof(format string, args ...interface{}) {
-	l.logger.Printf(format, args)
-}
-
-func (l logger) Warnf(format string, args ...interface{}) {
-	l.logger.Printf(format, args)
+	l.logger.Printf(format, args...)
 }
 
 func (l logger) Errorf(format string, args ...interface{}) {
-	l.logger.Printf(format, args)
+	l.logger.Printf(format, args...)
 }
