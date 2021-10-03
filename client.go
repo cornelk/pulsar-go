@@ -93,7 +93,7 @@ func NewClient(serverURL string, opts ...ClientOption) (*Client, error) {
 func (c *Client) Dial(ctx context.Context) error {
 	conn, err := c.dialer(ctx, c.log, c.host)
 	if err != nil {
-		c.log.Printf("Dialing failed: %w", err)
+		c.log.Errorf("Dialing failed: %w", err)
 		return err
 	}
 
@@ -216,14 +216,14 @@ func (c *Client) topicLookup(topic string, topicReady requestCallback) {
 	}
 
 	if err := c.conn.SendCallbackCommand(c.req, reqID, cmd, respHandler); err != nil {
-		c.log.Printf("Getting partitioned meta data failed: %w", err)
+		c.log.Errorf("Getting partitioned meta data failed: %w", err)
 		return
 	}
 
 	reqID = c.req.newID()
 	c.req.addCallbackCustom(reqID, topicReady, topic)
 	if err := c.sendLookupTopicCommand(topic, reqID); err != nil {
-		c.log.Printf("Sending lookup topic command failed: %w", err)
+		c.log.Errorf("Sending lookup topic command failed: %w", err)
 		return
 	}
 }
@@ -231,12 +231,12 @@ func (c *Client) topicLookup(topic string, topicReady requestCallback) {
 func (c *Client) nameSpaceTopicLookup(multi *multiTopicConsumer, config ConsumerConfig) {
 	topic, err := NewTopic(config.TopicPattern)
 	if err != nil {
-		c.log.Printf("Processing topic name failed: %w", err)
+		c.log.Errorf("Processing topic name failed: %w", err)
 		return
 	}
 	pattern, err := regexp.Compile(topic.CompleteName)
 	if err != nil {
-		c.log.Printf("Compiling topic regexp pattern failed: %w", err)
+		c.log.Errorf("Compiling topic regexp pattern failed: %w", err)
 		return
 	}
 
@@ -261,7 +261,7 @@ func (c *Client) nameSpaceTopicLookup(multi *multiTopicConsumer, config Consumer
 			for _, name := range resp.GetTopicsOfNamespaceResponse.Topics {
 				t, err := NewTopic(name)
 				if err != nil {
-					c.log.Printf("Processing topic name failed: %w", err)
+					c.log.Errorf("Processing topic name failed: %w", err)
 					continue
 				}
 
@@ -281,7 +281,7 @@ func (c *Client) nameSpaceTopicLookup(multi *multiTopicConsumer, config Consumer
 		// TODO handle deleted topics
 
 		if err = c.conn.SendCallbackCommand(c.req, reqID, cmd, respHandler); err != nil {
-			c.log.Printf("Getting topics of namespace failed: %w", err)
+			c.log.Errorf("Getting topics of namespace failed: %w", err)
 			return
 		}
 
@@ -303,7 +303,7 @@ func (c *Client) subscribeToTopics(multi *multiTopicConsumer, config ConsumerCon
 		if config.InitialPositionCallback != nil {
 			config.InitialPosition, config.StartMessageID, err = config.InitialPositionCallback(topic)
 			if err != nil {
-				c.log.Printf("Initial position callback failed: %w", err)
+				c.log.Errorf("Initial position callback failed: %w", err)
 				continue
 			}
 		}
@@ -311,7 +311,7 @@ func (c *Client) subscribeToTopics(multi *multiTopicConsumer, config ConsumerCon
 		config.Topic = topic
 		cons, err := c.createNewConsumer(config)
 		if err != nil {
-			c.log.Printf("Creating consumer failed: %w", err)
+			c.log.Errorf("Creating consumer failed: %w", err)
 			return err
 		}
 		cons.multi = multi
@@ -408,18 +408,18 @@ func (c *Client) readCommands() {
 				return
 			}
 
-			c.log.Printf("Reading command failed: %w", err)
+			c.log.Errorf("Reading command failed: %w", err)
 			return
 		}
 
 		if err = c.processReceivedCommand(cmd); err != nil {
-			c.log.Printf("Processing received command %+v failed: %w", cmd, err)
+			c.log.Errorf("Processing received command %+v failed: %w", cmd, err)
 		}
 	}
 }
 
 func (c *Client) processReceivedCommand(cmd *command) error {
-	c.log.Printf("*** Received command: %+v", cmd)
+	c.log.Debugf("*** Received command: %+v", cmd)
 
 	handler, ok := c.cmds[*cmd.Type]
 	if !ok {
