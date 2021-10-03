@@ -74,7 +74,7 @@ func (c *conn) close() error {
 
 // WriteCommand sends a command to the Pulsar broker.
 func (c *conn) WriteCommand(cmd proto.Message, payload []byte) error {
-	c.log.Debugf("*** Sending command: %+v", cmd)
+	c.log.Debugf("Sending command: %+v", cmd)
 
 	serialized, err := proto.Marshal(cmd)
 	if err != nil {

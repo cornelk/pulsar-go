@@ -430,7 +430,7 @@ func (c *Client) readCommands() {
 }
 
 func (c *Client) processReceivedCommand(cmd *command) error {
-	c.log.Debugf("*** Received command: %+v", cmd)
+	c.log.Debugf("Received command: %+v", cmd)
 
 	handler, ok := c.cmds[*cmd.Type]
 	if !ok {
