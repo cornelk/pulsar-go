@@ -8,6 +8,7 @@ A Go client library for the [Apache Pulsar](https://pulsar.apache.org/) project.
 * Pure Golang, works without use of Cgo
 * Idiomatic and cleaner Go
 * Better stability
+* Allows specifying of initial positions for topic pattern subscriptions
 * Higher test coverage
 * Pluggable logger interface
 

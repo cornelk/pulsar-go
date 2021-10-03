@@ -151,7 +151,7 @@ func TestSendReceiveLatestPositionInclusive(t *testing.T) {
 	readMessageAndCompare(t, consumer, msg)
 }
 
-func TestEmptyTopicLatestPositionInclusive(t *testing.T) {
+func TestConsumerEmptyTopicLatestPositionInclusive(t *testing.T) {
 	client := setup(t)
 	defer func() {
 		assert.Nil(t, client.Close())
@@ -190,7 +190,7 @@ func TestConsumerNonExistingTopic(t *testing.T) {
 	assert.True(t, strings.HasPrefix(err.Error(), "TopicNotFound:"))
 }
 
-func TestNothingToReceive(t *testing.T) {
+func TestConsumerNothingToReceive(t *testing.T) {
 	client := setup(t)
 	defer func() {
 		assert.Nil(t, client.Close())
@@ -225,7 +225,7 @@ func TestNothingToReceive(t *testing.T) {
 	assert.False(t, consumer.HasNext())
 }
 
-func TestSeek(t *testing.T) {
+func TestConsumerSeek(t *testing.T) {
 	client := setup(t)
 	defer func() {
 		assert.Nil(t, client.Close())
@@ -257,94 +257,6 @@ func TestSeek(t *testing.T) {
 	require.NoError(t, err)
 
 	readMessageAndCompare(t, consumer, msg1)
-}
-
-func TestConsumerTopicPattern(t *testing.T) {
-	client := setup(t)
-	defer func() {
-		assert.Nil(t, client.Close())
-	}()
-
-	topic := randomTopicName()
-
-	producer1, _ := newTestProducer(t, client, topic+"-1")
-	msg1 := sendMessage(t, producer1, "hello world 1")
-
-	producer2, _ := newTestProducer(t, client, topic+"-2")
-	msg2 := sendMessage(t, producer2, "hello world 2")
-
-	consConf := ConsumerConfig{
-		TopicPattern:    topic + "-.*",
-		InitialPosition: EarliestPosition,
-	}
-
-	ctx := context.Background()
-	consumer, err := client.NewConsumer(ctx, consConf)
-	require.NoError(t, err)
-
-	m1, err := consumer.ReadMessage(ctx)
-	require.NoError(t, err)
-	require.NotNil(t, m1)
-	m2, err := consumer.ReadMessage(ctx)
-	require.NoError(t, err)
-	require.NotNil(t, m2)
-
-	assert.Nil(t, consumer.AckMessage(m1))
-	assert.Nil(t, consumer.AckMessage(m2))
-
-	var topic1Msg, topic2Msg *Message
-
-	// messages are returned in random order
-	if string(m1.Body) == string(msg1.Body) {
-		topic1Msg = m1
-		topic2Msg = m2
-	} else {
-		topic1Msg = m2
-		topic2Msg = m1
-	}
-
-	assert.Equal(t, topic1Msg.Body, msg1.Body)
-	assert.Equal(t, topic2Msg.Body, msg2.Body)
-
-	t1, err := NewTopic(topic1Msg.Topic)
-	require.NoError(t, err)
-	assert.Equal(t, topic+"-1", t1.LocalName)
-
-	t2, err := NewTopic(topic2Msg.Topic)
-	require.NoError(t, err)
-	assert.NotNil(t, t2)
-	assert.Equal(t, topic+"-2", t2.LocalName)
-}
-
-func TestConsumerTopicPatternDiscovery(t *testing.T) {
-	client := setup(t)
-	defer func() {
-		assert.Nil(t, client.Close())
-	}()
-
-	topic := randomTopicName()
-
-	consConf := ConsumerConfig{
-		TopicPattern:                  topic + "-.*",
-		TopicPatternDiscoveryInterval: 500,
-		InitialPosition:               EarliestPosition,
-	}
-
-	ctx := context.Background()
-	consumer, err := client.NewConsumer(ctx, consConf)
-	require.NoError(t, err)
-
-	time.Sleep(time.Second)
-
-	producer, _ := newTestProducer(t, client, topic+"-1")
-	msg := sendMessage(t, producer, "hello world")
-
-	m, err := consumer.ReadMessage(ctx)
-	require.NoError(t, err)
-	require.NotNil(t, m)
-
-	assert.Nil(t, consumer.AckMessage(m))
-	assert.Equal(t, msg.Body, m.Body)
 }
 
 func TestGetLastMessageID(t *testing.T) {
