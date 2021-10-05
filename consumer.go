@@ -25,6 +25,9 @@ const (
 // InitialPosition ...
 type InitialPosition pb.CommandSubscribe_InitialPosition
 
+// InitialPositionCallback declares a callback that allows a client to specify
+// a start position or message for every discovered topic when using topic
+// pattern subscriptions.
 type InitialPositionCallback func(topic string) (position InitialPosition, StartMessageID []byte, err error)
 
 // Subscription initial position options.
