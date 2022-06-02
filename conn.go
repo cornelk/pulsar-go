@@ -123,8 +123,11 @@ func (c *conn) readCommand() (*command, error) {
 	b := make([]byte, 4+4)
 	_, err := io.ReadFull(&c.reader, b)
 	if err != nil {
-		if e, ok := err.(*net.OpError); ok && e.Err.Error() == ErrNetClosing.Error() {
-			return nil, ErrNetClosing
+		var e *net.OpError
+		if errors.As(err, &e) {
+			if e.Err.Error() == ErrNetClosing.Error() {
+				return nil, ErrNetClosing
+			}
 		}
 
 		return nil, fmt.Errorf("reading header failed: %w", err)
