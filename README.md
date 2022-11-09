@@ -1,6 +1,12 @@
-# Apache Pulsar Golang Client Library [![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/cornelk/pulsar-go) [![Go Report Card](https://goreportcard.com/badge/github.com/cornelk/pulsar-go)](https://goreportcard.com/report/github.com/cornelk/pulsar-go)
+# Apache Pulsar Golang Client Library
 
-A Go client library for the [Apache Pulsar](https://pulsar.apache.org/) project.
+[![Build status](https://github.com/cornelk/pulsar-go/actions/workflows/go.yaml/badge.svg?branch=main)](https://github.com/cornelk/pulsar-go/actions)
+[![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/cornelk/pulsar-go)
+[![Go Report Card](https://goreportcard.com/badge/github.com/cornelk/pulsar-go)](https://goreportcard.com/report/github.com/cornelk/pulsar-go)
+[![codecov](https://codecov.io/gh/cornelk/pulsar-go/branch/main/graph/badge.svg?token=NS5UY28V3A)](https://codecov.io/gh/cornelk/pulsar-go)
+
+
+An alternative Golang client library for the [Apache Pulsar](https://pulsar.apache.org/) project.
 
 ## Benefits over other Pulsar Go libraries
 
