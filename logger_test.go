@@ -3,7 +3,7 @@
 package pulsar
 
 import (
-	"io/ioutil"
+	"io"
 	"log"
 	"testing"
 )
@@ -17,7 +17,7 @@ type testLogger struct {
 func newTestLogger(tb testing.TB) Logger {
 	tb.Helper()
 	return testLogger{
-		logger: log.New(ioutil.Discard, "[Pulsar] ", log.LstdFlags),
+		logger: log.New(io.Discard, "[Pulsar] ", log.LstdFlags),
 		TB:     tb,
 	}
 }

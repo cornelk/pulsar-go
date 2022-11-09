@@ -10,10 +10,10 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	pb "github.com/cornelk/pulsar-go/proto"
-	"go.uber.org/atomic"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -369,7 +369,7 @@ func (c *Client) CloseProducer(producerID uint64) error {
 
 // Close closes all consumers, producers and the client connection.
 func (c *Client) Close() error {
-	if !c.closing.CAS(false, true) {
+	if !c.closing.CompareAndSwap(false, true) {
 		return nil
 	}
 
