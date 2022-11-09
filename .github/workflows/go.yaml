@@ -20,7 +20,7 @@ jobs:
 
     services:
       pulsar:
-        image: codejuggle/pulsar-docker-standalone:2.6.2
+        image: apachepulsar/pulsar-standalone:2.8.4
         ports:
           - 6650:6650
           - 8080:8080
