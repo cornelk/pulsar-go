@@ -5,8 +5,7 @@ import (
 	"errors"
 	"io"
 	"regexp"
-
-	"go.uber.org/atomic"
+	"sync/atomic"
 )
 
 // ErrConsumerOfMessageNotFound is returned when the consumer for a received
@@ -55,7 +54,7 @@ func (c *multiTopicConsumer) changeConsumerID(consumer *consumer, oldID, newID u
 }
 
 func (c *multiTopicConsumer) Close() error {
-	if !c.closing.CAS(false, true) {
+	if !c.closing.CompareAndSwap(false, true) {
 		return nil
 	}
 
