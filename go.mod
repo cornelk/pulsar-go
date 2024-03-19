@@ -3,8 +3,8 @@ module github.com/cornelk/pulsar-go
 go 1.19
 
 require (
-	github.com/stretchr/testify v1.8.1
-	google.golang.org/protobuf v1.28.1
+	github.com/stretchr/testify v1.9.0
+	google.golang.org/protobuf v1.33.0
 )
 
 require (
