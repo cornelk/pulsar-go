@@ -1,5 +1,6 @@
 run:
-  deadline: 5m
+  timeout: 5m
+  modules-download-mode: readonly
   build-tags:
     - integration
 
@@ -8,9 +9,8 @@ linters:
     - asasalint # check for pass []any as any in variadic func(...any)
     - asciicheck # Simple linter to check that your code does not contain non-ASCII identifiers
     - bidichk # Checks for dangerous unicode character sequences
-    - contextcheck # check the function whether to use a non-inherited context
+    - contextcheck # check the function whether use a non-inherited context
     - decorder # check declaration order and count of types, constants, variables and functions
-    - depguard # Go linter that checks if package imports are in a list of acceptable packages
     - dogsled # Checks assignments with too many blank identifiers (e.g. x, _, _, _, := f())
     - durationcheck # check for two durations multiplied together
     - errcheck # checking for unchecked errors
@@ -18,6 +18,7 @@ linters:
     - errorlint # finds code that will cause problems with the error wrapping scheme introduced in Go 1.13
     - exportloopref # checks for pointers to enclosing loop variables
     - gci # controls golang package import order and makes it always deterministic
+    - gocheckcompilerdirectives # Checks that go compiler directive comments (//go:) are valid
     - gocognit # Computes and checks the cognitive complexity of functions
     - gocritic # Provides diagnostics that check for bugs, performance and style issues
     - gocyclo # Computes and checks the cyclomatic complexity of functions
@@ -26,18 +27,22 @@ linters:
     - gofmt # checks whether code was gofmt-ed
     - gosimple # Linter for Go source code that specializes in simplifying a code
     - govet # reports suspicious constructs, such as Printf calls with wrong arguments
+    - grouper # An analyzer to analyze expression groups
     - ineffassign # Detects when assignments to existing variables are not used
     - maintidx # measures the maintainability index of each function
     - makezero # Finds slice declarations with non-zero initial length
+    - mirror # reports wrong mirror patterns of bytes/strings usage
     - misspell # Finds commonly misspelled English words in comments
     - nakedret # Finds naked returns in functions
     - nilerr # Finds the code that returns nil even if it checks that the error is not nil
     - nilnil # Checks that there is no simultaneous return of `nil` error and an invalid value
-    - prealloc # Finds slice declarations that could potentially be pre-allocated
+    - perfsprint # Checks that fmt.Sprintf can be replaced with a faster alternative
+    - prealloc # Finds slice declarations that could potentially be preallocated
     - predeclared # find code that shadows one of Go's predeclared identifiers
+    - reassign # Checks that package variables are not reassigned
     - revive # drop-in replacement of golint
     - staticcheck # drop-in replacement of go vet
-    - stylecheck # replacement for golint
+    - stylecheck # Stylecheck is a replacement for golint
     - tenv # detects using os.Setenv instead of t.Setenv
     - thelper # checks the consistency of test helpers
     - tparallel # detects inappropriate usage of t.Parallel()
@@ -49,10 +54,13 @@ linters:
     - wastedassign # finds wasted assignment statements
     - whitespace # detects leading and trailing whitespace
 
-    # TODO - containedctx # detects struct contained context.Context field
-    # TODO - cyclop # checks function and package cyclomatic complexity
-    # TODO - funlen # Tool for detection of long functions
-    # TODO - nestif # Reports deeply nested if statements
+# TODO    - containedctx # detects struct contained context.Context field
+# TODO    - cyclop # checks function and package cyclomatic complexity
+# TODO    - funlen # Tool for detection of long functions
+# TODO    - goconst # Finds repeated strings that could be replaced by a constant
+# TODO    - nestif # Reports deeply nested if statements
+# TODO    - testifylint # Checks usage of github.com/stretchr/testify
+# TODO    - wrapcheck # Checks that errors returned from external packages are wrapped
 
 issues:
   exclude-use-default: false
