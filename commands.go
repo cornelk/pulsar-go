@@ -123,7 +123,7 @@ func (c *Client) handleMessage(base *command) error {
 		return err
 	}
 	if msgMeta.GetCompression() != pb.CompressionType_NONE {
-		return fmt.Errorf("compressed messages not supported") // TODO support
+		return errors.New("compressed messages not supported") // TODO support
 	}
 
 	consumerID := cmd.GetConsumerId()
