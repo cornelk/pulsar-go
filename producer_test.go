@@ -53,7 +53,7 @@ func sendMessageAsync(t *testing.T, producer *Producer, s string) *Message {
 		Body: []byte(s),
 	}
 	ctx := context.Background()
-	require.Nil(t, producer.WriteMessageAsync(ctx, m.Body))
+	require.NoError(t, producer.WriteMessageAsync(ctx, m.Body))
 	return m
 }
 
@@ -63,13 +63,13 @@ func TestProducerConfigValidate(t *testing.T) {
 	}
 
 	err := conf.Validate()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestProducerRestartSequence(t *testing.T) {
 	client := setup(t)
 	defer func() {
-		assert.Nil(t, client.Close())
+		assert.NoError(t, client.Close())
 	}()
 
 	prod, topic := newTestProducer(t, client, "")
@@ -94,7 +94,7 @@ func TestProducerRestartSequence(t *testing.T) {
 func TestProducerBrokerGeneratedName(t *testing.T) {
 	client := setup(t)
 	defer func() {
-		assert.Nil(t, client.Close())
+		assert.NoError(t, client.Close())
 	}()
 
 	prodConf := ProducerConfig{
@@ -110,7 +110,7 @@ func TestProducerBrokerGeneratedName(t *testing.T) {
 func TestProducerBatchSize(t *testing.T) {
 	client := setup(t)
 	defer func() {
-		assert.Nil(t, client.Close())
+		assert.NoError(t, client.Close())
 	}()
 
 	topic := randomTopicName()
@@ -148,7 +148,7 @@ func TestProducerBatchSize(t *testing.T) {
 func TestProducerBatchTimeout(t *testing.T) {
 	client := setup(t)
 	defer func() {
-		assert.Nil(t, client.Close())
+		assert.NoError(t, client.Close())
 	}()
 
 	topic := randomTopicName()

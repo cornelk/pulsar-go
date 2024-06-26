@@ -15,7 +15,7 @@ type logger struct {
 	logger *log.Logger
 }
 
-func newLogger() Logger {
+func newLogger() logger {
 	return logger{
 		logger: log.New(io.Discard, "[Pulsar] ", log.LstdFlags),
 	}

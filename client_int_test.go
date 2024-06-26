@@ -50,7 +50,7 @@ func TestNewClient(t *testing.T) {
 func TestClientTopics(t *testing.T) {
 	client := setup(t)
 	defer func() {
-		assert.Nil(t, client.Close())
+		assert.NoError(t, client.Close())
 	}()
 
 	topic := randomTopicName()

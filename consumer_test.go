@@ -3,7 +3,7 @@ package pulsar
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestConsumerConfigValidate(t *testing.T) {
@@ -12,5 +12,5 @@ func TestConsumerConfigValidate(t *testing.T) {
 	}
 
 	err := conf.Validate()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 }

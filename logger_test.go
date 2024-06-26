@@ -14,7 +14,7 @@ type testLogger struct {
 }
 
 // newTestLogger returns a new logger that logs to the provided testing.TB.
-func newTestLogger(tb testing.TB) Logger {
+func newTestLogger(tb testing.TB) testLogger {
 	tb.Helper()
 	return testLogger{
 		logger: log.New(io.Discard, "[Pulsar] ", log.LstdFlags),

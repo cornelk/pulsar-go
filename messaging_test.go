@@ -29,7 +29,7 @@ func setup(t *testing.T) *Client {
 	resp, err := h.Do(req)
 	require.NoError(t, err)
 	err = resp.Body.Close()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	err = client.Dial(ctx)
 	require.NoError(t, err)
@@ -56,7 +56,7 @@ func readMessageAndCompare(t *testing.T, consumer Consumer, expected *Message) *
 func TestSendReceiveEarliestPosition(t *testing.T) {
 	client := setup(t)
 	defer func() {
-		assert.Nil(t, client.Close())
+		assert.NoError(t, client.Close())
 	}()
 
 	producer, topic := newTestProducer(t, client, "")
@@ -95,7 +95,7 @@ func TestSendReceiveEarliestPosition(t *testing.T) {
 func TestSendReceiveLatestPositionExclusive(t *testing.T) {
 	client := setup(t)
 	defer func() {
-		assert.Nil(t, client.Close())
+		assert.NoError(t, client.Close())
 	}()
 
 	producer, topic := newTestProducer(t, client, "")
@@ -126,7 +126,7 @@ func TestSendReceiveLatestPositionExclusive(t *testing.T) {
 func TestSendReceiveLatestPositionInclusive(t *testing.T) {
 	client := setup(t)
 	defer func() {
-		assert.Nil(t, client.Close())
+		assert.NoError(t, client.Close())
 	}()
 
 	producer, topic := newTestProducer(t, client, "")
@@ -154,7 +154,7 @@ func TestSendReceiveLatestPositionInclusive(t *testing.T) {
 func TestConsumerEmptyTopicLatestPositionInclusive(t *testing.T) {
 	client := setup(t)
 	defer func() {
-		assert.Nil(t, client.Close())
+		assert.NoError(t, client.Close())
 	}()
 
 	consConf := ConsumerConfig{
@@ -180,7 +180,7 @@ func TestConsumerNonExistingTopic(t *testing.T) {
 
 	client := setup(t)
 	defer func() {
-		assert.Nil(t, client.Close())
+		assert.NoError(t, client.Close())
 	}()
 
 	consConf := ConsumerConfig{
@@ -195,7 +195,7 @@ func TestConsumerNonExistingTopic(t *testing.T) {
 func TestConsumerNothingToReceive(t *testing.T) {
 	client := setup(t)
 	defer func() {
-		assert.Nil(t, client.Close())
+		assert.NoError(t, client.Close())
 	}()
 
 	topic := randomTopicName()
@@ -221,7 +221,7 @@ func TestConsumerNothingToReceive(t *testing.T) {
 	select {
 	case <-timeout:
 	case err := <-done:
-		assert.Error(t, err)
+		require.Error(t, err)
 		t.Fail()
 	}
 	assert.False(t, consumer.HasNext())
@@ -230,7 +230,7 @@ func TestConsumerNothingToReceive(t *testing.T) {
 func TestConsumerSeek(t *testing.T) {
 	client := setup(t)
 	defer func() {
-		assert.Nil(t, client.Close())
+		assert.NoError(t, client.Close())
 	}()
 
 	producer, topic := newTestProducer(t, client, "")
@@ -264,7 +264,7 @@ func TestConsumerSeek(t *testing.T) {
 func TestGetLastMessageID(t *testing.T) {
 	client := setup(t)
 	defer func() {
-		assert.Nil(t, client.Close())
+		assert.NoError(t, client.Close())
 	}()
 
 	producer, topic := newTestProducer(t, client, "")
@@ -284,7 +284,7 @@ func TestGetLastMessageID(t *testing.T) {
 	messageID, err := consumer.LastMessageID()
 	require.NoError(t, err)
 	require.NotNil(t, messageID)
-	assert.True(t, *messageID.EntryId == math.MaxUint64)
+	assert.Equal(t, *messageID.EntryId, uint64(math.MaxUint64))
 
 	sendMessage(t, producer, "hello world")
 	messageID, err = consumer.LastMessageID()

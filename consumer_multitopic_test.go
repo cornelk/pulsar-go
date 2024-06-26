@@ -16,7 +16,7 @@ import (
 func TestConsumerTopicPattern(t *testing.T) {
 	client := setup(t)
 	defer func() {
-		assert.Nil(t, client.Close())
+		assert.NoError(t, client.Close())
 	}()
 
 	topic := randomTopicName()
@@ -43,8 +43,8 @@ func TestConsumerTopicPattern(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, m2)
 
-	assert.Nil(t, consumer.AckMessage(m1))
-	assert.Nil(t, consumer.AckMessage(m2))
+	assert.NoError(t, consumer.AckMessage(m1))
+	assert.NoError(t, consumer.AckMessage(m2))
 
 	messages := []string{string(m1.Body), string(m2.Body)}
 	m := map[string]*Message{
@@ -67,7 +67,7 @@ func TestConsumerTopicPattern(t *testing.T) {
 func TestConsumerTopicPatternDiscovery(t *testing.T) {
 	client := setup(t)
 	defer func() {
-		assert.Nil(t, client.Close())
+		assert.NoError(t, client.Close())
 	}()
 
 	topic := randomTopicName()
@@ -91,14 +91,14 @@ func TestConsumerTopicPatternDiscovery(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, m)
 
-	assert.Nil(t, consumer.AckMessage(m))
+	require.NoError(t, consumer.AckMessage(m))
 	assert.Equal(t, msg.Body, m.Body)
 }
 
 func TestConsumerTopicPatternInitialPosition(t *testing.T) {
 	client := setup(t)
 	defer func() {
-		assert.Nil(t, client.Close())
+		assert.NoError(t, client.Close())
 	}()
 
 	topic := randomTopicName()
@@ -133,17 +133,17 @@ func TestConsumerTopicPatternInitialPosition(t *testing.T) {
 	m1, err := consumer.ReadMessage(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, m1)
-	assert.Nil(t, consumer.AckMessage(m1))
+	require.NoError(t, consumer.AckMessage(m1))
 
 	m2, err := consumer.ReadMessage(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, m2)
-	assert.Nil(t, consumer.AckMessage(m2))
+	require.NoError(t, consumer.AckMessage(m2))
 
 	m3, err := consumer.ReadMessage(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, m3)
-	assert.Nil(t, consumer.AckMessage(m3))
+	require.NoError(t, consumer.AckMessage(m3))
 
 	messages := []string{string(m1.Body), string(m2.Body), string(m3.Body)}
 	sort.Strings(messages)
