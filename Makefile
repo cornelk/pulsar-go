@@ -12,8 +12,13 @@ test: ## run tests
 test-integration: ## run integration tests
 	go test -tags integration -race -p 1 ./...
 
+test-integration-coverage: ## run integration tests with coverage
+	go test -tags integration -race -p 1 ./... -coverprofile .testCoverage -covermode=atomic -coverpkg=./...
+	go tool cover -func .testCoverage | grep total | awk '{print "Total coverage: "$$3}'
+
 test-coverage: ## run unit tests and create test coverage
-	go test ./... -coverprofile .testCoverage -covermode=atomic -coverpkg=./...
+	CGO_ENABLED=0 go test ./... -coverprofile .testCoverage -covermode=atomic -coverpkg=./...
+	go tool cover -func .testCoverage | grep total | awk '{print "Total coverage: "$$3}'
 
 test-coverage-web: test-coverage ## run unit tests and show test coverage in browser
 	go tool cover -func .testCoverage | grep total | awk '{print "Total coverage: "$$3}'

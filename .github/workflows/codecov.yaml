@@ -15,6 +15,13 @@ jobs:
   codecov:
     timeout-minutes: 15
 
+    services:
+      pulsar:
+        image: apachepulsar/pulsar-standalone:2.8.4
+        ports:
+          - 6650:6650
+          - 8080:8080
+
     name: Coverage
     runs-on: ubuntu-latest
     steps:
@@ -32,8 +39,9 @@ jobs:
       - name: Get dependencies
         run: go version && go mod download
 
+      # sleep to make sure that pulsar container is ready
       - name: Run tests with coverage
-        run: make test-coverage
+        run: sleep 20 && make test-integration-coverage
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3

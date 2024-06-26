@@ -17,13 +17,6 @@ jobs:
       matrix:
         go: ['1.21']
 
-    services:
-      pulsar:
-        image: apachepulsar/pulsar-standalone:2.8.4
-        ports:
-          - 6650:6650
-          - 8080:8080
-
     steps:
       - name: Set up Go 1.x
         uses: actions/setup-go@v3
@@ -40,9 +33,8 @@ jobs:
       - name: Get dependencies
         run: go mod download
 
-      # sleep to make sure that pulsar container is ready
       - name: Run tests
-        run: sleep 20 && make test-integration
+        run: make test
 
       - name: Run linter
         run: make lint
