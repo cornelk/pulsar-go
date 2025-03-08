@@ -7,8 +7,8 @@ import (
 
 // Logger ...
 type Logger interface {
-	Debugf(format string, args ...interface{})
-	Errorf(format string, args ...interface{})
+	Debugf(format string, args ...any)
+	Errorf(format string, args ...any)
 }
 
 type logger struct {
@@ -21,10 +21,10 @@ func newLogger() logger {
 	}
 }
 
-func (l logger) Debugf(format string, args ...interface{}) {
+func (l logger) Debugf(format string, args ...any) {
 	l.logger.Printf(format, args...)
 }
 
-func (l logger) Errorf(format string, args ...interface{}) {
+func (l logger) Errorf(format string, args ...any) {
 	l.logger.Printf(format, args...)
 }
