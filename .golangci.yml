@@ -19,7 +19,6 @@ linters:
     - errcheck # checking for unchecked errors
     - errname # Checks that errors are prefixed with the `Err` and error types are suffixed with the `Error`
     - errorlint # finds code that will cause problems with the error wrapping scheme introduced in Go 1.13
-    - exportloopref # checks for pointers to enclosing loop variables
     - gci # controls golang package import order and makes it always deterministic
     - gocheckcompilerdirectives # Checks that go compiler directive comments (//go:) are valid
     - gocognit # Computes and checks the cognitive complexity of functions
@@ -49,7 +48,6 @@ linters:
     - revive # drop-in replacement of golint
     - staticcheck # drop-in replacement of go vet
     - stylecheck # Stylecheck is a replacement for golint
-    - tenv # detects using os.Setenv instead of t.Setenv
     - testifylint # Checks usage of github.com/stretchr/testify
     - thelper # checks the consistency of test helpers
     - tparallel # detects inappropriate usage of t.Parallel()
@@ -58,6 +56,7 @@ linters:
     - unparam # Reports unused function parameters
     - unused # Checks Go code for unused constants, variables, functions and types
     - usestdlibvars # detect the possibility to use variables/constants from the Go standard library
+    - usetesting # Reports uses of functions with replacement inside the testing package
     - wastedassign # finds wasted assignment statements
     - whitespace # detects leading and trailing whitespace
 
